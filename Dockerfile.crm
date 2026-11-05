@@ -1,0 +1,32 @@
+# syntax=docker/dockerfile:1
+# Imagem do CRM (app.dynamo.business). Build a partir da raiz do repositório.
+
+FROM node:22-alpine AS base
+RUN corepack enable
+WORKDIR /repo
+
+# Dependências + build. Este estágio também serve de "caixa de ferramentas"
+# (cadastrar cliente, gerar migração) via: docker compose run --rm tools ...
+FROM base AS builder
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+COPY apps/crm/package.json apps/crm/
+RUN pnpm install --frozen-lockfile
+COPY apps/crm apps/crm
+ENV NEXT_TELEMETRY_DISABLED=1
+# Segredo descartável só para o build (o real vem do .env em produção)
+RUN BETTER_AUTH_SECRET=$(head -c 32 /dev/urandom | base64) BETTER_AUTH_URL=http://localhost:3000 pnpm --filter crm build
+WORKDIR /repo/apps/crm
+
+FROM node:22-alpine AS runner
+ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0
+WORKDIR /app
+RUN addgroup -S app && adduser -S app -G app
+# Ferramentas mínimas para rodar as migrações no boot
+RUN mkdir /migrate && cd /migrate && npm init -y >/dev/null && npm i --omit=dev drizzle-orm@0.45.4 postgres@4.1.0 >/dev/null
+COPY --from=builder --chown=app:app /repo/apps/crm/.next/standalone ./
+COPY --from=builder --chown=app:app /repo/apps/crm/.next/static ./apps/crm/.next/static
+COPY --from=builder --chown=app:app /repo/apps/crm/drizzle /migrate/drizzle
+COPY --from=builder --chown=app:app /repo/apps/crm/scripts/migrate.mjs /migrate/scripts/migrate.mjs
+USER app
+EXPOSE 3000
+CMD ["sh", "-c", "node /migrate/scripts/migrate.mjs && node apps/crm/server.js"]

@@ -1,0 +1,11 @@
+{
+  "name": "dynamo-business",
+  "private": true,
+  "packageManager": "pnpm@10.28.0",
+  "scripts": {
+    "dev:crm": "pnpm --filter crm dev",
+    "build:crm": "pnpm --filter crm build",
+    "db:generate": "pnpm --filter crm db:generate",
+    "db:migrate": "pnpm --filter crm db:migrate"
+  }
+}

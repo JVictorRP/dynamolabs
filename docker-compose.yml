@@ -1,0 +1,70 @@
+# Stack do CRM no VPS: Postgres + app. Fica atrás do Traefik que já serve o n8n.
+#   Subir/atualizar:   docker compose up -d --build
+#   Cadastrar cliente: docker compose run --rm tools pnpm novo-cliente --empresa "X" --nome "Y" --email e@x.com --senha "..."
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      retries: 10
+    networks: [internal]
+
+  crm:
+    build: { context: ., dockerfile: Dockerfile.crm, target: runner }
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      db: { condition: service_healthy }
+    networks: [internal, traefik]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=${TRAEFIK_NETWORK}
+      - traefik.http.routers.crm.rule=Host(`${APP_DOMAIN}`)
+      - traefik.http.routers.crm.entrypoints=websecure
+      - traefik.http.routers.crm.tls=true
+      - traefik.http.routers.crm.tls.certresolver=${TRAEFIK_CERTRESOLVER}
+      - traefik.http.services.crm.loadbalancer.server.port=3000
+
+  # Caixa de ferramentas (não fica rodando). Usada para cadastrar clientes.
+  tools:
+    build: { context: ., dockerfile: Dockerfile.crm, target: builder }
+    profiles: [tools]
+    env_file: .env
+    depends_on:
+      db: { condition: service_healthy }
+    networks: [internal]
+
+  # Backup diário do banco em ./backups (mantém 14 dias)
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./backups:/backups
+    entrypoint: >
+      sh -c 'while true; do
+        pg_dump -h db -U ${POSTGRES_USER} ${POSTGRES_DB} | gzip > /backups/dynamo-$$(date +%F).sql.gz;
+        find /backups -name "*.sql.gz" -mtime +14 -delete;
+        sleep 86400; done'
+    depends_on:
+      db: { condition: service_healthy }
+    networks: [internal]
+
+volumes:
+  pgdata:
+
+networks:
+  internal:
+  traefik:
+    name: ${TRAEFIK_NETWORK}
+    external: true

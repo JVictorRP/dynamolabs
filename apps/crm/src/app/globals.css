@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+/*
+ * Tokens Dynamo (provisórios — trocar pelos valores oficiais do design system).
+ * Distribuição de cor: ~80% cinzas, ~15% laranja, ~5% azul. Fundo escuro.
+ */
+@theme {
+  --color-ink-950: #09090a;
+  --color-ink-900: #111113;
+  --color-ink-850: #17171a;
+  --color-ink-800: #1e1e22;
+  --color-ink-700: #2a2a2f;
+  --color-ink-500: #6b6b73;
+  --color-ink-400: #8e8e96;
+  --color-ink-300: #b4b4bb;
+  --color-ink-100: #ececef;
+  --color-dyn-orange: #ff5a1f;
+  --color-dyn-orange-soft: #ff5a1f1f;
+  --color-dyn-blue: #3b82f6;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-oxanium), ui-sans-serif, system-ui, sans-serif;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--color-ink-950);
+  color: var(--color-ink-100);
+}
+
+/* Eyebrow com espaçamento largo — padrão Dynamo */
+.eyebrow {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--color-ink-400);
+}
