@@ -4,7 +4,8 @@ import { ensureStages, leadSummary } from "@/lib/data/leads";
 import { campaignTotals } from "@/lib/data/campaigns";
 import { parsePeriod, periodStart, toDay } from "@/lib/data/period";
 import { fmtBRL, fmtInt, safeDiv, SOURCE_LABEL } from "@/lib/format";
-import { Card, PageHeader, PeriodTabs, Stat } from "@/components/ui";
+import { PERIODS } from "@/lib/data/period";
+import { Card, CardTitle, PageHeader, PeriodTabs, Stat } from "@/components/ui";
 
 export const metadata: Metadata = { title: "Visão geral" };
 
@@ -26,7 +27,12 @@ export default async function VisaoGeral({ searchParams }: PageProps<"/">) {
 
   return (
     <>
-      <PageHeader eyebrow="Visão geral" title={`Olá, ${organization.name}`}>
+      <PageHeader
+        eyebrow="Visão geral"
+        title={`Olá, ${organization.name}`}
+        highlight={organization.name}
+        support={`Seus números dos últimos ${PERIODS[period]} dias.`}
+      >
         <PeriodTabs current={period} basePath="/" />
       </PageHeader>
 
@@ -39,19 +45,19 @@ export default async function VisaoGeral({ searchParams }: PageProps<"/">) {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
-          <p className="eyebrow">Funil</p>
-          <ul className="mt-5 space-y-3">
+          <CardTitle>Funil</CardTitle>
+          <ul className="mt-6 space-y-4">
             {stages.map((s) => {
               const n = stageCount.get(s.id) ?? 0;
               return (
                 <li key={s.id}>
                   <div className="flex justify-between text-sm">
-                    <span className="text-ink-300">{s.name}</span>
-                    <span className="tabular-nums text-ink-400">{fmtInt(n)}</span>
+                    <span className="text-mist">{s.name}</span>
+                    <span className="font-bold tabular-nums text-white">{fmtInt(n)}</span>
                   </div>
-                  <div className="mt-1.5 h-1.5 rounded-full bg-ink-800">
+                  <div className="mt-2 h-[3px] bg-graphite">
                     <div
-                      className={`h-1.5 rounded-full ${s.isWon ? "bg-dyn-orange" : s.isLost ? "bg-ink-500" : "bg-ink-300"}`}
+                      className={`h-[3px] ${s.isWon ? "bg-amber" : s.isLost ? "bg-gray-500" : "bg-mist"}`}
                       style={{ width: `${(n / maxStage) * 100}%` }}
                     />
                   </div>
@@ -62,17 +68,17 @@ export default async function VisaoGeral({ searchParams }: PageProps<"/">) {
         </Card>
 
         <Card>
-          <p className="eyebrow">Leads por origem</p>
+          <CardTitle>Leads por origem</CardTitle>
           {summary.bySource.length === 0 ? (
-            <p className="mt-5 text-sm text-ink-500">Nenhum lead no período.</p>
+            <p className="mt-6 text-sm text-gray-300">Nenhum lead no período.</p>
           ) : (
-            <ul className="mt-5 divide-y divide-ink-800">
+            <ul className="mt-4 divide-y divide-graphite">
               {summary.bySource
                 .sort((a, b) => Number(b.total) - Number(a.total))
                 .map((r) => (
-                  <li key={r.source} className="flex justify-between py-2.5 text-sm">
-                    <span className="text-ink-300">{SOURCE_LABEL[r.source] ?? r.source}</span>
-                    <span className="tabular-nums">{fmtInt(Number(r.total))}</span>
+                  <li key={r.source} className="flex justify-between py-3 text-sm">
+                    <span className="text-mist">{SOURCE_LABEL[r.source] ?? r.source}</span>
+                    <span className="font-bold tabular-nums text-white">{fmtInt(Number(r.total))}</span>
                   </li>
                 ))}
             </ul>

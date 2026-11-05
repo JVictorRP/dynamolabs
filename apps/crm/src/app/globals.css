@@ -1,25 +1,39 @@
 @import "tailwindcss";
 
 /*
- * Tokens Dynamo (provisórios — trocar pelos valores oficiais do design system).
- * Distribuição de cor: ~80% cinzas, ~15% laranja, ~5% azul. Fundo escuro.
+ * Design system "Dynamo Labs" (v8) aplicado à interface do CRM.
+ * Fonte da verdade: artifact Dynamo Labs → project/tokens.json.
+ *
+ * Regras que valem aqui também:
+ * - Fundo escuro (void). Cor entra só CHAPADA: texto, ponto, fio, botão ou bloco.
+ * - Degradês apenas de preto e branco (passando por cinzas). Nunca degradê com cor.
+ * - Tipografia 80 / 15 / 5: ~80% cinzas, ~15% âmbar (palavra-chave, número, sobrancelha),
+ *   ~5% teal (ponto, fio, sobrancelha curta). Nunca âmbar e teal no mesmo nível.
  */
 @theme {
-  --color-ink-950: #09090a;
-  --color-ink-900: #111113;
-  --color-ink-850: #17171a;
-  --color-ink-800: #1e1e22;
-  --color-ink-700: #2a2a2f;
-  --color-ink-500: #6b6b73;
-  --color-ink-400: #8e8e96;
-  --color-ink-300: #b4b4bb;
-  --color-ink-100: #ececef;
-  --color-dyn-orange: #ff5a1f;
-  --color-dyn-orange-soft: #ff5a1f1f;
-  --color-dyn-blue: #3b82f6;
+  /* Paleta da marca */
+  --color-void: #0a0a0a;
+  --color-graphite: #353535;
+  --color-mist: #e5f3f5;
+  --color-teal: #17c6c1;
+  --color-amber: #ffb339;
+  --color-gray-100: #e9e9e9;
+  --color-gray-300: #a8a8a8;
+  --color-gray-500: #606060;
+  --color-gray-700: #3f3f3f;
+  --color-deco-ink: rgb(255 255 255 / 0.27);
 
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-oxanium), ui-sans-serif, system-ui, sans-serif;
+  /* Adaptação para interface: degraus de cinza entre void e graphite para painéis */
+  --color-panel: #121212;
+  --color-panel-2: #1b1b1b;
+
+  --font-sans: var(--font-archivo), "Helvetica Neue", Arial, sans-serif;
+  --font-display: var(--font-archivo), "Helvetica Neue", Arial, sans-serif;
+  --font-label: var(--font-syncopate), var(--font-archivo), Arial, sans-serif;
+  --font-deco: var(--font-oxanium), var(--font-archivo), sans-serif;
+
+  --radius-chip: 8px;
+  --radius-cta: 12px;
 }
 
 html {
@@ -27,15 +41,90 @@ html {
 }
 
 body {
-  background: var(--color-ink-950);
-  color: var(--color-ink-100);
+  background: var(--color-void);
+  color: var(--color-mist);
 }
 
-/* Eyebrow com espaçamento largo — padrão Dynamo */
+/* Classes da marca em @layer components: utilitários do Tailwind (ex.: text-amber) podem sobrescrever. */
+@layer components {
+/* Sobrancelha: Archivo 700, caixa alta, tracking 0.4em */
 .eyebrow {
   font-family: var(--font-display);
-  font-size: 0.7rem;
-  letter-spacing: 0.28em;
+  font-weight: 700;
+  font-size: 0.72rem;
+  letter-spacing: 0.4em;
   text-transform: uppercase;
-  color: var(--color-ink-400);
+  color: var(--color-amber);
+}
+.eyebrow-muted {
+  color: var(--color-gray-300);
+}
+
+/* Título pesado: Archivo 900, caixa alta, -0.04em, entrelinha 0.9 */
+.display {
+  font-family: var(--font-display);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 0.9;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+/* Linha de apoio light itálico */
+.display-light {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-style: italic;
+  letter-spacing: -0.04em;
+  line-height: 0.9;
+  text-transform: uppercase;
+  color: var(--color-gray-300);
+}
+
+/* Rodapé de frase: Archivo 500, tracking 0.22em */
+.footer-line {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 0.68rem;
+  letter-spacing: 0.22em;
+  line-height: 1.4;
+  text-transform: uppercase;
+  color: var(--color-gray-300);
+}
+
+/* Rótulo de botão/chip: Syncopate, caixa alta extra larga */
+.label {
+  font-family: var(--font-label);
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+/* Texto decorativo Oxanium: textura, nunca informação */
+.deco {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  pointer-events: none;
+  user-select: none;
+  -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 34%, rgb(0 0 0 / 0.35) 52%, transparent 66%);
+  mask-image: linear-gradient(90deg, #000 0%, #000 34%, rgb(0 0 0 / 0.35) 52%, transparent 66%);
+}
+.deco > span {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  margin-top: 9px;
+  background: var(--color-deco-ink);
+}
+.deco > p {
+  margin: 0;
+  font-family: var(--font-deco);
+  font-weight: 300;
+  font-size: 18px;
+  line-height: 1.7;
+  letter-spacing: 0.6em;
+  text-transform: uppercase;
+  color: var(--color-deco-ink);
+}
 }

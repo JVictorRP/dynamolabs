@@ -8,10 +8,11 @@ export function NavLink({ href, children }: { href: string; children: React.Reac
   return (
     <Link
       href={href}
-      className={`flex shrink-0 items-center gap-3 whitespace-nowrap rounded-lg px-3 py-2 text-sm transition ${
-        active ? "bg-dyn-orange-soft text-dyn-orange" : "text-ink-400 hover:bg-ink-850 hover:text-ink-100"
+      className={`flex shrink-0 items-center gap-3 whitespace-nowrap rounded-[8px] px-3 py-2.5 text-[0.7rem] font-semibold uppercase tracking-[0.22em] transition ${
+        active ? "bg-graphite text-white" : "text-gray-300 hover:text-white"
       }`}
     >
+      <i className={`size-[7px] rounded-full ${active ? "bg-teal" : "bg-transparent"}`} aria-hidden="true" />
       {children}
     </Link>
   );

@@ -24,6 +24,7 @@
 | Entrada de dados | n8n → API do CRM com chave por cliente | Reaproveita o n8n; o CRM não precisa falar com Meta/Google direto no MVP |
 | Deploy | Docker Compose atrás do Traefik do n8n | Não arrisca o n8n; Coolify fica como opção futura |
 | Subdomínios | site e app separados | Site rápido e indexável; app privado (`noindex`) |
+| Visual | Design system "Dynamo Labs" v8 (artifact) | Mesmas cores, fontes (Archivo, Syncopate, Oxanium) e regras dos posts: fundo escuro, 80/15/5, degradê só preto e branco |
 
 ## Entraves e como estamos tratando
 

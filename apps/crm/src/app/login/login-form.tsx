@@ -3,6 +3,10 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
+import { CtaButton } from "@/components/ui";
+
+const field =
+  "mt-2 w-full rounded-[8px] border border-graphite bg-panel px-4 py-3 text-base text-white outline-none transition focus:border-teal";
 
 export function LoginForm() {
   const router = useRouter();
@@ -21,7 +25,7 @@ export function LoginForm() {
     });
     setPending(false);
     if (error) {
-      setError("E-mail ou senha incorretos.");
+      setError(error.status === 429 ? "Muitas tentativas. Aguarde um minuto." : "E-mail ou senha incorretos.");
       return;
     }
     const next = params.get("next");
@@ -30,35 +34,19 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="mt-8 space-y-4">
+    <form onSubmit={onSubmit} className="mt-8 space-y-5">
       <label className="block">
-        <span className="text-xs text-ink-400">E-mail</span>
-        <input
-          name="email"
-          type="email"
-          required
-          autoComplete="email"
-          className="mt-1 w-full rounded-lg border border-ink-700 bg-ink-900 px-3 py-2.5 text-sm outline-none focus:border-dyn-orange"
-        />
+        <span className="footer-line">E-mail</span>
+        <input name="email" type="email" required autoComplete="email" className={field} />
       </label>
       <label className="block">
-        <span className="text-xs text-ink-400">Senha</span>
-        <input
-          name="password"
-          type="password"
-          required
-          autoComplete="current-password"
-          className="mt-1 w-full rounded-lg border border-ink-700 bg-ink-900 px-3 py-2.5 text-sm outline-none focus:border-dyn-orange"
-        />
+        <span className="footer-line">Senha</span>
+        <input name="password" type="password" required autoComplete="current-password" className={field} />
       </label>
-      {error && <p className="text-sm text-red-400">{error}</p>}
-      <button
-        type="submit"
-        disabled={pending}
-        className="w-full rounded-lg bg-dyn-orange px-4 py-2.5 text-sm font-semibold text-ink-950 transition hover:brightness-110 disabled:opacity-60"
-      >
+      {error && <p className="text-sm font-medium text-amber">{error}</p>}
+      <CtaButton type="submit" disabled={pending} className="w-full">
         {pending ? "Entrando…" : "Entrar"}
-      </button>
+      </CtaButton>
     </form>
   );
 }

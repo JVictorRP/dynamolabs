@@ -10,7 +10,7 @@ export function SignOutButton() {
         await authClient.signOut();
         router.replace("/login");
       }}
-      className="text-xs text-ink-500 hover:text-ink-100"
+      className="footer-line hover:!text-white"
     >
       Sair
     </button>
