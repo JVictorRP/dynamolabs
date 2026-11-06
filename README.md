@@ -29,4 +29,4 @@ pnpm dev:crm                           # abre em http://localhost:3000
 
 ## Tecnologia
 
-Next.js 16 · Postgres 16 · Drizzle ORM · Better Auth (multiempresa) · Tailwind 4 · Docker atrás do Traefik do VPS.
+Next.js 16 · Postgres · Drizzle ORM · Better Auth (multiempresa) · Tailwind 4 · deploy pelo Easypanel no VPS.

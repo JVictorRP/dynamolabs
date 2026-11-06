@@ -1,102 +1,104 @@
-# Colocar o CRM no ar (VPS Hostinger · KVM 2 · Ubuntu 24.04)
+# Colocar o CRM no ar pelo Easypanel
 
-Tudo abaixo é feito no **Web console** do painel da Hostinger (ou `ssh root@168.231.100.173`).
+O VPS (KVM 2, srv814976) já roda o **Easypanel**, que gerencia o Traefik, o SSL e o n8n (serviço `n8n` do projeto `dynamo`). O CRM entra no mesmo projeto, com dois serviços novos: **crm-db** (Postgres) e **crm** (o app).
 
-> ⚠️ Não troque o sistema operacional nem aplique o template "Coolify" pelo painel: isso apaga o VPS, inclusive o n8n.
+Painel: `http://168.231.100.173:3000`
 
-## 0. Antes de tudo: backup
+> ⚠️ Não instale Coolify nem troque o sistema operacional: o Easypanel já cumpre esse papel, e trocar apagaria o n8n.
 
-Painel Hostinger → VPS → **Backups e monitoramento** → criar um snapshot. Se algo der errado, você volta em 1 clique.
+## 0. Snapshot
 
-## 1. Descobrir como o n8n está montado
+Hostinger → VPS → **Backups e monitoramento** → criar snapshot. Volta tudo em 1 clique se algo der errado.
 
-```bash
-docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Ports}}"
-docker network ls
-grep -rn "certresolver\|acme" /root/docker-compose.yml 2>/dev/null | head
-```
-
-O que esperar (template n8n da Hostinger): um container **traefik** ocupando as portas 80/443, uma rede chamada parecida com `root_default` e um certresolver chamado `mytlschallenge`. Anote os dois nomes: eles vão para o `.env` (`TRAEFIK_NETWORK` e `TRAEFIK_CERTRESOLVER`).
-
-## 2. DNS (painel Hostinger → Domínios → dynamo.business → DNS)
+## 1. DNS (Hostinger → Domínios → dynamo.business → DNS)
 
 | Tipo | Nome | Aponta para |
 |---|---|---|
-| A | `@` | `168.231.100.173` |
 | A | `app` | `168.231.100.173` |
-| A | `n8n` | `168.231.100.173` *(se ainda não existir)* |
+| A | `@` | `168.231.100.173` *(para o site, na próxima etapa)* |
 | CNAME | `www` | `dynamo.business` |
 
-A propagação leva de minutos a algumas horas.
+## 2. Ligar o GitHub ao Easypanel
 
-## 3. Firewall
+1. No GitHub: **Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token**.
+   - Repository access: *Only select repositories* → `dynamolabs`
+   - Permissions → Repository → **Contents: Read-only** (e **Webhooks: Read and write**, para o deploy automático)
+2. No Easypanel: **Settings → GitHub** → cole o token → Save.
 
-```bash
-ufw allow OpenSSH && ufw allow 80 && ufw allow 443 && ufw --force enable && ufw status
+## 3. Banco de dados
+
+Projeto **dynamo** → **+ Service** → **Postgres**
+
+- Service name: `crm-db`
+- Database name: `dynamo`
+- Password: deixe a gerada
+
+Crie e, na tela do serviço, copie a **Internal Connection URL** (começa com `postgres://` e usa o host `dynamo_crm-db`). Ela vai no passo 4.
+
+## 4. App do CRM
+
+Projeto **dynamo** → **+ Service** → **App** → nome `crm`.
+
+**Source → GitHub**
+- Owner: `JVictorRP` · Repository: `dynamolabs` · Branch: `main` · Build path: `/`
+
+**Build → Dockerfile**
+- File: `Dockerfile.crm`
+
+**Environment** (gere os segredos no Web console da Hostinger com `openssl rand -hex 32`, um para cada):
+
+```
+BETTER_AUTH_URL=https://app.dynamo.business
+BETTER_AUTH_SECRET=<segredo 1>
+DATABASE_URL=<Internal Connection URL do passo 3>
+ADMIN_TOKEN=<segredo 2>
 ```
 
-## 4. Baixar o código
+**Domains** → Add domain
+- Host: `app.dynamo.business` · HTTPS: ligado · Port: **3000**
 
-O repositório é privado, então o VPS precisa de uma chave só de leitura:
+Clique em **Deploy**. O primeiro build leva de 3 a 6 minutos. Nos logs do serviço devem aparecer `Migrações aplicadas.` e `Ready`.
 
-```bash
-ssh-keygen -t ed25519 -N "" -f ~/.ssh/dynamo_deploy -C "vps-dynamo"
-cat ~/.ssh/dynamo_deploy.pub
+Abra **https://app.dynamo.business** → tela de login.
+
+**Deploy automático:** em *Source*, ative *Auto Deploy*. Cada atualização enviada ao GitHub publica sozinha.
+
+## 5. Cadastrar clientes
+
+Pelo n8n (nó HTTP Request) ou por qualquer cliente HTTP:
+
+- `POST https://app.dynamo.business/api/admin/clientes`
+- Header `Authorization: Bearer <ADMIN_TOKEN>`
+- Body JSON:
+
+```json
+{ "empresa": "Bacalhau Club", "nome": "Nome do contato", "email": "contato@cliente.com", "senha": "UmaSenhaForte2026" }
 ```
 
-Copie a linha exibida e cadastre em GitHub → repositório **dynamolabs** → Settings → **Deploy keys** → *Add deploy key* (sem marcar "write access"). Depois:
+A resposta traz o login e a **chave de API do n8n** daquele cliente (só aparece nessa resposta). Acrescente `"demo": true` para criar uma conta de demonstração com dados fictícios.
+
+Pelo Web console, o mesmo cadastro fica assim:
 
 ```bash
-cat >> ~/.ssh/config <<'EOF'
-Host github-dynamo
-  HostName github.com
-  IdentityFile ~/.ssh/dynamo_deploy
-EOF
-git clone git@github-dynamo:JVictorRP/dynamolabs.git /opt/dynamo
-cd /opt/dynamo
+curl -X POST https://app.dynamo.business/api/admin/clientes \
+  -H "Authorization: Bearer COLE_O_ADMIN_TOKEN" -H "Content-Type: application/json" \
+  -d '{"empresa":"Dynamo Demo","nome":"João Victor","email":"seu@email.com","senha":"UmaSenhaForte2026","demo":true}'
 ```
 
-## 5. Configurar e subir
+## 6. Backups
 
-```bash
-cp .env.example .env
-openssl rand -hex 32   # copie para BETTER_AUTH_SECRET
-openssl rand -hex 24   # copie para POSTGRES_PASSWORD e dentro do DATABASE_URL
-nano .env              # cole os valores e confira TRAEFIK_NETWORK / TRAEFIK_CERTRESOLVER
-docker compose up -d --build
-docker compose logs -f crm   # deve aparecer "Migrações aplicadas." e "Ready"
-```
+Serviço **crm-db** → **Backups** → configure um destino fora do VPS (S3, Cloudflare R2, Backblaze) com frequência diária.
 
-Abra **https://app.dynamo.business** — deve aparecer a tela de login.
+## 7. Segurança do painel
 
-## 6. Cadastrar o primeiro cliente
-
-```bash
-docker compose run --rm tools pnpm novo-cliente \
-  --empresa "Bacalhau Club" --nome "Nome do contato" \
-  --email contato@cliente.com --senha "UmaSenhaForte2026"
-```
-
-O comando mostra a **chave de API do n8n** uma única vez. Guarde no n8n (*Credentials → Header Auth*).
-
-Para a sua própria conta de teste com dados fictícios, acrescente `--demo`.
-
-## 7. Atualizar depois de mudanças no código
-
-```bash
-cd /opt/dynamo && git pull && docker compose up -d --build
-```
-
-## 8. Backups
-
-- O serviço `backup` grava um dump diário em `/opt/dynamo/backups` (guarda 14 dias).
-- Próximo passo: copiar essa pasta para fora do VPS (Google Drive via rclone ou um bucket S3).
+O Easypanel está aberto em `http://IP:3000`, sem cadeado. Em **Settings → General**, defina um domínio para o painel (ex.: `painel.dynamo.business`, com registro A no DNS) e ative a autenticação em dois fatores na sua conta.
 
 ## Se algo der errado
 
 | Sintoma | Causa provável |
 |---|---|
-| `network ... not found` | `TRAEFIK_NETWORK` diferente do que aparece em `docker network ls` |
-| Site abre sem cadeado / erro de certificado | DNS ainda propagando ou `TRAEFIK_CERTRESOLVER` com nome errado |
-| Login dá erro "Invalid origin" | `BETTER_AUTH_URL` diferente do endereço acessado |
-| `crm` reiniciando sem parar | Rode `docker compose logs crm` e verifique `DATABASE_URL` |
+| Build falha em `pnpm install` | Repositório não autorizado no token do GitHub (passo 2) |
+| Serviço reinicia sem parar | `DATABASE_URL` errada: confira se usa o host interno `dynamo_crm-db` |
+| Erro de certificado | DNS do `app` ainda propagando (espere alguns minutos e clique em *Deploy* de novo) |
+| Login dá "Invalid origin" | `BETTER_AUTH_URL` diferente do endereço aberto no navegador |
+| `/api/admin/clientes` responde 401 | `ADMIN_TOKEN` vazio, curto (mínimo 32 caracteres) ou diferente do enviado |

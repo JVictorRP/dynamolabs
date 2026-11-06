@@ -5,8 +5,7 @@ FROM node:22-alpine AS base
 RUN corepack enable
 WORKDIR /repo
 
-# Dependências + build. Este estágio também serve de "caixa de ferramentas"
-# (cadastrar cliente, gerar migração) via: docker compose run --rm tools ...
+# Dependências + build.
 FROM base AS builder
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY apps/crm/package.json apps/crm/

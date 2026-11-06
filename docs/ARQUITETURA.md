@@ -4,11 +4,11 @@
 
 ```
                     ┌──────────────── VPS Hostinger KVM 2 (8 GB · 100 GB) ────────────────┐
- Internet ──HTTPS──▶│  Traefik (já existente, gera SSL automático)                        │
+ Internet ──HTTPS──▶│  Easypanel + Traefik (SSL automático)                             │
                     │     ├── dynamo.business       → site (Next.js, estático)            │
                     │     ├── app.dynamo.business   → CRM (Next.js) ──▶ Postgres 16       │
                     │     └── n8n.dynamo.business   → n8n ──(API com chave)──▶ CRM        │
-                    │  Backup diário do Postgres → ./backups (+ cópia fora do VPS)       │
+                    │  Backup do Postgres pelo Easypanel (destino externo)             │
                     └─────────────────────────────────────────────────────────────────────┘
        Meta Ads / Google Ads ──▶ n8n ──▶ POST /api/v1/leads e /api/v1/campaign-metrics
 ```
@@ -22,7 +22,7 @@
 | Login | Better Auth, e-mail e senha, **sem cadastro público** | Só a Dynamo cria acessos; papéis owner/admin/member por empresa |
 | Banco | Postgres 16 no próprio VPS (rede interna, sem porta exposta) | Custo zero e dados no Brasil sob seu controle |
 | Entrada de dados | n8n → API do CRM com chave por cliente | Reaproveita o n8n; o CRM não precisa falar com Meta/Google direto no MVP |
-| Deploy | Docker Compose atrás do Traefik do n8n | Não arrisca o n8n; Coolify fica como opção futura |
+| Deploy | Easypanel (já instalado no VPS, o mesmo que roda o n8n) | Deploy pelo painel a partir do GitHub, SSL automático, sem terminal |
 | Subdomínios | site e app separados | Site rápido e indexável; app privado (`noindex`) |
 | Visual | Design system "Dynamo Labs" v8 (artifact) | Mesmas cores, fontes (Archivo, Syncopate, Oxanium) e regras dos posts: fundo escuro, 80/15/5, degradê só preto e branco |
 
@@ -32,7 +32,7 @@
 2. **LGPD.** A Dynamo é *operadora* dos dados dos leads dos clientes. Pendências: cláusula de tratamento de dados no contrato, política de privacidade e termos de uso no site, procedimento de exclusão de dados a pedido.
 3. **WhatsApp por cliente (fase futura).** Cada cliente precisa do próprio número na API oficial. Para conectar pelo painel, a Dynamo precisará do programa *Tech Provider* da Meta — processo lento, vale iniciar cedo.
 4. **E-mail transacional.** Hoje os acessos são criados pela Dynamo com senha. Para "esqueci minha senha" e convites, contratar Resend ou Brevo e configurar SPF/DKIM/DMARC no domínio.
-5. **Ponto único de falha.** Tudo em um VPS. Backup diário local já incluso; falta copiar os backups para fora (Google Drive/S3) e ativar o backup semanal do painel Hostinger.
+5. **Ponto único de falha.** Tudo em um VPS. Configurar o backup do Postgres no Easypanel para um destino fora do VPS (S3 ou compatível) e ativar o backup semanal do painel Hostinger.
 6. **Capacidade.** 8 GB de RAM atendem site + CRM + n8n com folga no início. Reavaliar com ~20 clientes ativos ou se o n8n passar a rodar fluxos pesados.
 
 ## Roteiro
