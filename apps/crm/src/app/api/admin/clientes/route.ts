@@ -1,6 +1,6 @@
-import { createHash, timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { checkAdminToken } from "@/lib/admin";
 import { createClient, OnboardingError } from "@/lib/onboarding";
 
 /**
@@ -18,12 +18,8 @@ const bodySchema = z.object({
 });
 
 function isAdmin(request: Request) {
-  const expected = process.env.ADMIN_TOKEN;
-  if (!expected || expected.length < 32) return false; // rota desligada sem um token forte
   const header = request.headers.get("authorization") ?? "";
-  const given = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
-  const h = (v: string) => createHash("sha256").update(v).digest();
-  return timingSafeEqual(h(given), h(expected));
+  return checkAdminToken(header.startsWith("Bearer ") ? header.slice(7) : "");
 }
 
 export async function POST(request: Request) {

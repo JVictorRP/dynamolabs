@@ -65,6 +65,10 @@ Abra **https://app.dynamo.business** → tela de login.
 
 ## 5. Cadastrar clientes
 
+**Jeito mais fácil:** abra **https://app.dynamo.business/admin**, cole o `ADMIN_TOKEN`, preencha empresa, contato, e-mail e senha e clique em *Cadastrar cliente*. A tela mostra o login e a chave do n8n. Marque "dados fictícios" para uma conta de demonstração.
+
+**Por API (n8n ou terminal):**
+
 Pelo n8n (nó HTTP Request) ou por qualquer cliente HTTP:
 
 - `POST https://app.dynamo.business/api/admin/clientes`
