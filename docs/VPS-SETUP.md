@@ -49,10 +49,12 @@ Projeto **dynamo** → **+ Service** → **App** → nome `crm`.
 
 ```
 BETTER_AUTH_URL=https://app.dynamo.business
-BETTER_AUTH_SECRET=<segredo 1>
-DATABASE_URL=<Internal Connection URL do passo 3>
-ADMIN_TOKEN=<segredo 2>
+BETTER_AUTH_SECRET=COLE_O_SEGREDO_1
+DATABASE_URL=COLE_A_INTERNAL_CONNECTION_URL
+ADMIN_TOKEN=COLE_O_SEGREDO_2
 ```
+
+Substitua o texto em MAIÚSCULAS pelo valor, sem aspas, espaços ou sinais `< >`.
 
 **Domains** → Add domain
 - Host: `app.dynamo.business` · HTTPS: ligado · Port: **80** (o Easypanel define PORT=80 para o app)
