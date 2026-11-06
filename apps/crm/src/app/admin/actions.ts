@@ -1,7 +1,7 @@
 "use server";
 
 import { z } from "zod";
-import { checkAdminToken } from "@/lib/admin";
+import { adminTokenHint, checkAdminToken, configuredAdminToken } from "@/lib/admin";
 import { createClient, OnboardingError } from "@/lib/onboarding";
 
 export type NovoClienteState =
@@ -30,10 +30,14 @@ export async function novoClienteAction(_prev: NovoClienteState, formData: FormD
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
 
   if (!checkAdminToken(parsed.data.token)) {
-    if (!process.env.ADMIN_TOKEN || process.env.ADMIN_TOKEN.trim().length < 32) {
-      return { ok: false, error: "ADMIN_TOKEN não está configurado no Easypanel (precisa ter 32+ caracteres)." };
+    const configured = configuredAdminToken();
+    if (configured.length < 32) {
+      return {
+        ok: false,
+        error: `O app não está lendo um ADMIN_TOKEN válido (lido: ${configured.length} caracteres; precisa de 32+). Confira a variável no Easypanel e faça um novo Deploy.`,
+      };
     }
-    return { ok: false, error: "Chave da Dynamo incorreta." };
+    return { ok: false, error: `Chave da Dynamo incorreta. ${adminTokenHint(parsed.data.token)}` };
   }
 
   try {
