@@ -55,7 +55,7 @@ ADMIN_TOKEN=<segredo 2>
 ```
 
 **Domains** → Add domain
-- Host: `app.dynamo.business` · HTTPS: ligado · Port: **3000**
+- Host: `app.dynamo.business` · HTTPS: ligado · Port: **80** (o Easypanel define PORT=80 para o app)
 
 Clique em **Deploy**. O primeiro build leva de 3 a 6 minutos. Nos logs do serviço devem aparecer `Migrações aplicadas.` e `Ready`.
 
@@ -99,6 +99,7 @@ O Easypanel está aberto em `http://IP:3000`, sem cadeado. Em **Settings → Gen
 |---|---|
 | Build falha em `pnpm install` | Repositório não autorizado no token do GitHub (passo 2) |
 | Serviço reinicia sem parar | `DATABASE_URL` errada: confira se usa o host interno `dynamo_crm-db` |
+| "Service is not reachable" | Porta do domínio diferente da do app: confira no log (`http://0.0.0.0:80`) e use a mesma em Domains |
 | Erro de certificado | DNS do `app` ainda propagando (espere alguns minutos e clique em *Deploy* de novo) |
 | Login dá "Invalid origin" | `BETTER_AUTH_URL` diferente do endereço aberto no navegador |
 | `/api/admin/clientes` responde 401 | `ADMIN_TOKEN` vazio, curto (mínimo 32 caracteres) ou diferente do enviado |
