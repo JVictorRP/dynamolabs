@@ -14,6 +14,7 @@
     "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {
+    "@dynamo/public-lead": "workspace:*",
     "better-auth": "^1.7.18",
     "drizzle-orm": "^0.45.4",
     "next": "16.4.5",
