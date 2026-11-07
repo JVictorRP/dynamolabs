@@ -1,0 +1,38 @@
+{
+  "id": "v1",
+  "frames": 119,
+  "tiers": {
+    "desktop": {
+      "width": 1920,
+      "height": 1072
+    },
+    "mobile": {
+      "width": 960,
+      "height": 536
+    }
+  },
+  "pathPattern": "/frames/v1/{tier}/{n}.webp?v=66d55b5e1e",
+  "focus": [
+    {
+      "at": 0,
+      "x": 0.84,
+      "y": 0.5
+    },
+    {
+      "at": 0.3,
+      "x": 0.72,
+      "y": 0.55
+    },
+    {
+      "at": 0.5,
+      "x": 0.45,
+      "y": 0.6
+    },
+    {
+      "at": 1,
+      "x": 0.4,
+      "y": 0.55
+    }
+  ],
+  "version": "66d55b5e1e"
+}

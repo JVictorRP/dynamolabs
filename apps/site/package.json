@@ -1,0 +1,42 @@
+{
+  "name": "site",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/build-tokens.mjs && next dev",
+    "build": "node scripts/build-tokens.mjs && next build",
+    "test": "vitest run",
+    "e2e": "playwright test",
+    "typecheck": "next typegen && tsc --noEmit",
+    "verify": "vitest run && playwright test",
+    "check:release": "node scripts/check-release.mjs"
+  },
+  "dependencies": {
+    "lenis": "^1.3.27",
+    "next": "16.4.5",
+    "opentype.js": "^2.0.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "three": "^0.187.0"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@playwright/test": "^1",
+    "@tailwindcss/turbopack": "^4",
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.8",
+    "@types/node": "^20",
+    "@types/opentype.js": "^1.3.10",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/three": "^0.187.0",
+    "jsdom": "^31.0.0",
+    "serve": "^14.2.7",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vitest": "^3"
+  },
+  "packageManager": "pnpm@10.28.0"
+}

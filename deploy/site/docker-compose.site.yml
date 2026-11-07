@@ -1,0 +1,29 @@
+# Acrescenta o site ao stack do VPS sem editar o docker-compose.yml existente:
+#   docker compose -f docker-compose.yml -f deploy/site/docker-compose.site.yml up -d --build site
+# Usa a rede "traefik" e as variáveis de domínio que o compose do CRM já define.
+services:
+  site:
+    build:
+      context: .
+      dockerfile: Dockerfile.site
+      args:
+        NEXT_PUBLIC_LEAD_ENDPOINT: ${NEXT_PUBLIC_LEAD_ENDPOINT}
+        NEXT_PUBLIC_WHATSAPP_URL: ${NEXT_PUBLIC_WHATSAPP_URL}
+        NEXT_PUBLIC_CONTACT_EMAIL: ${NEXT_PUBLIC_CONTACT_EMAIL:-}
+        NEXT_PUBLIC_INSTAGRAM_URL: ${NEXT_PUBLIC_INSTAGRAM_URL:-}
+        NEXT_PUBLIC_LINKEDIN_URL: ${NEXT_PUBLIC_LINKEDIN_URL:-}
+    restart: unless-stopped
+    networks: [traefik]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=${TRAEFIK_NETWORK}
+      # dynamo.business (e www redireciona para dynamo.business)
+      - traefik.http.routers.site.rule=Host(`${SITE_DOMAIN}`) || Host(`www.${SITE_DOMAIN}`)
+      - traefik.http.routers.site.entrypoints=websecure
+      - traefik.http.routers.site.tls=true
+      - traefik.http.routers.site.tls.certresolver=${TRAEFIK_CERTRESOLVER}
+      - traefik.http.routers.site.middlewares=site-www
+      - traefik.http.middlewares.site-www.redirectregex.regex=^https://www\.${SITE_DOMAIN}/(.*)
+      - traefik.http.middlewares.site-www.redirectregex.replacement=https://${SITE_DOMAIN}/$${1}
+      - traefik.http.middlewares.site-www.redirectregex.permanent=true
+      - traefik.http.services.site.loadbalancer.server.port=80

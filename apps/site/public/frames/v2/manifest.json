@@ -1,0 +1,28 @@
+{
+  "id": "v2",
+  "frames": 121,
+  "tiers": {
+    "desktop": {
+      "width": 1920,
+      "height": 1080
+    },
+    "mobile": {
+      "width": 960,
+      "height": 540
+    }
+  },
+  "pathPattern": "/frames/v2/{tier}/{n}.webp?v=7058abb18b",
+  "focus": [
+    {
+      "at": 0,
+      "x": 0.42,
+      "y": 0.65
+    },
+    {
+      "at": 1,
+      "x": 0.42,
+      "y": 0.65
+    }
+  ],
+  "version": "7058abb18b"
+}

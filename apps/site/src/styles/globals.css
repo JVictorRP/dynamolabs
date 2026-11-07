@@ -1,0 +1,86 @@
+@import "tailwindcss";
+@import "./tokens.css";
+
+@theme {
+  --font-display: var(--font-archivo), "Helvetica Neue", Arial, sans-serif;
+  --font-label: var(--font-syncopate), var(--font-archivo), Arial, sans-serif;
+  --font-script: var(--font-saint), "Snell Roundhand", cursive;
+  --font-deco: var(--font-oxanium), var(--font-archivo), sans-serif;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--color-void);
+  color: var(--color-white);
+  font-family: var(--font-display);
+}
+
+/* Lenis (scroll suave): regras mínimas do pacote. */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+/* Conversa do celular: balão entrando e indicador "digitando". */
+@keyframes bubble-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.6em) scale(0.97);
+  }
+}
+@keyframes typing-dot {
+  0%,
+  60%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-0.25em);
+  }
+}
+.bubble-in {
+  animation: bubble-in 0.28s ease-out;
+}
+.typing-dot {
+  animation: typing-dot 1s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bubble-in,
+  .typing-dot {
+    animation: none;
+  }
+}
+
+/* Sem JavaScript os palcos animados não funcionam: o <noscript> da página mostra as seções estáticas. */
+@media (scripting: none) {
+  [data-stage] {
+    display: none;
+  }
+}
+
+/* Bloco do hero: posição e tamanho vêm de variáveis CSS que reproduzem `heroLayout` (src/lib/stage/layout.ts), para o texto
+   ser renderizado no HTML do servidor e aparecer no primeiro paint. Quando o JS mede o palco, ele grava os mesmos valores
+   inline no elemento (--hero-*), então nada se move. A largura do título é 8,92 em (src/content/title-sizes.ts). */
+.hero-vars {
+  --hero-margin: clamp(20px, 5vw, 72px);
+  --hero-left: var(--hero-margin);
+  --hero-bottom: clamp(48px, 12svh, 120px);
+  --hero-fs: clamp(24px, min(11.5vw, 17svh, calc(62vw / 8.92)), 128px);
+}
+@media (max-aspect-ratio: 9/10) {
+  .hero-vars {
+    --hero-fs: clamp(24px, min(11.5vw, 17svh, calc((100vw - 2 * var(--hero-margin)) / 8.92)), 128px);
+  }
+}
+

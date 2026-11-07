@@ -9,3 +9,10 @@ out
 next-env.d.ts
 backups/
 tsconfig.tsbuildinfo
+
+.superpowers/
+
+# site (gerado)
+apps/site/src/styles/tokens.css
+apps/site/test-results/
+apps/site/playwright-report/

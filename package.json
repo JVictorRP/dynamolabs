@@ -6,6 +6,9 @@
     "dev:crm": "pnpm --filter crm dev",
     "build:crm": "pnpm --filter crm build",
     "db:generate": "pnpm --filter crm db:generate",
-    "db:migrate": "pnpm --filter crm db:migrate"
+    "db:migrate": "pnpm --filter crm db:migrate",
+    "dev:site": "pnpm --filter site dev",
+    "build:site": "pnpm --filter site build",
+    "test:site": "pnpm --filter site test"
   }
 }
