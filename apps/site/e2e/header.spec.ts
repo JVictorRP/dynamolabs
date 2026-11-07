@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-type Section = "hero-s2" | "wipe-in" | "chat" | "wipe-out" | "video2" | "footer";
+type Section = "hero-s2" | "chat" | "video2" | "footer";
 
 async function setHeader(page: Page, section: Section, p: number) {
   await page.evaluate(([s, v]) => window.__labHeader!.set(s as Section, v as number), [section, p] as const);

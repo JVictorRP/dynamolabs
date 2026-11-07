@@ -13,3 +13,7 @@ export function visibleChat<T extends ChatMessage>(script: T[], p: number): { sh
   const typing = next && p >= next.at - TYPING_WINDOW[next.from] ? next.from : null;
   return { shown, typing };
 }
+
+/** Parte do palco do chat em que a conversa corre: começa quando o texto da seção já chegou e acaba antes de o vídeo 2 cobrir a tela. */
+export const CHAT_FROM = 0.04;
+export const CHAT_TO = 0.92;

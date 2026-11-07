@@ -10,8 +10,8 @@ const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min)
 function cssHero(w: number, h: number) {
   const margin = clamp(0.05 * w, 20, 72);
   const portrait = w / h < 0.9; // @media (max-aspect-ratio: 9/10)
-  const cap = (portrait ? w - 2 * margin : 0.62 * w) / 8.92;
-  return { fontPx: clamp(Math.min(0.115 * w, 0.17 * h, cap), 24, 128), left: margin, bottom: clamp(0.12 * h, 48, 120) };
+  const cap = (portrait ? 0.72 * (w - 2 * margin) : 0.45 * w) / 8.92;
+  return { fontPx: clamp(Math.min(0.083 * w, 0.122 * h, cap), 20, 92), left: margin, bottom: clamp(0.12 * h, 48, 120) };
 }
 
 describe("the hero block rendered by CSS (server HTML) matches heroLayout (client JS)", () => {
@@ -28,9 +28,9 @@ describe("the hero block rendered by CSS (server HTML) matches heroLayout (clien
   it("globals.css really uses the same constants (guards the CSS side of the parity)", () => {
     expect(css).toContain("--hero-margin: clamp(20px, 5vw, 72px)");
     expect(css).toContain("--hero-bottom: clamp(48px, 12svh, 120px)");
-    expect(css).toContain(`min(11.5vw, 17svh, calc(62vw / ${TITLE_SIZE_EM.hero.width}))`);
-    expect(css).toContain(`calc((100vw - 2 * var(--hero-margin)) / ${TITLE_SIZE_EM.hero.width})`);
+    expect(css).toContain(`min(8.3vw, 12.2svh, calc(45vw / ${TITLE_SIZE_EM.hero.width}))`);
+    expect(css).toContain(`calc(0.72 * (100vw - 2 * var(--hero-margin)) / ${TITLE_SIZE_EM.hero.width})`);
     expect(css).toContain("@media (max-aspect-ratio: 9/10)");
-    expect(css).toMatch(/clamp\(24px, min\(11\.5vw/);
+    expect(css).toMatch(/clamp\(20px, min\(8\.3vw/);
   });
 });

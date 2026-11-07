@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { stageProgress, stageWrapperHeight } from "../src/lib/choreo/stage-progress";
+import { stageEdge, stageProgress, stageWrapperHeight } from "../src/lib/choreo/stage-progress";
 
 // Um palco de 450svh de rolagem: wrapper = 100svh (sticky) + 450svh. Em um viewport de 1000px: wrapper 5500, sticky 1000, curso 4500.
 describe("stageProgress", () => {
@@ -29,5 +29,21 @@ describe("stageProgress", () => {
 describe("stageWrapperHeight", () => {
   it("builds the CSS height from the pin length in svh", () => {
     expect(stageWrapperHeight(450)).toBe("calc(100svh + 450svh)");
+  });
+});
+
+describe("stageEdge (where the top of a stage is, as a fraction of the screen height)", () => {
+  it("is 1 while the stage is below the screen, 0 once its top reaches the top, and in between while it slides in", () => {
+    expect(stageEdge(1500, 900)).toBe(1);
+    expect(stageEdge(900, 900)).toBe(1);
+    expect(stageEdge(450, 900)).toBeCloseTo(0.5, 6);
+    expect(stageEdge(0, 900)).toBe(0);
+    expect(stageEdge(-3000, 900)).toBe(0);
+  });
+});
+
+describe("stageWrapperHeight with an overlap", () => {
+  it("does not change the stage's own scroll length (the overlap is a negative margin, not a shorter stage)", () => {
+    expect(stageWrapperHeight(350)).toBe("calc(100svh + 350svh)");
   });
 });

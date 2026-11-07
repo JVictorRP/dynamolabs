@@ -10,6 +10,11 @@ export function stageProgress(wrapperTop: number, wrapperHeight: number, stickyH
   return clamp01(-wrapperTop / range);
 }
 
+/** Onde está o topo do palco, em fração da altura da tela: 1 = logo abaixo dela (ou mais longe), 0 = já chegou ao topo. */
+export function stageEdge(wrapperTop: number, viewportHeight: number): number {
+  return viewportHeight > 0 ? clamp01(wrapperTop / viewportHeight) : 1;
+}
+
 /** Altura CSS do contêiner de um palco com `pinVh` de rolagem (usa svh: não muda com a barra do navegador móvel). */
 export function stageWrapperHeight(pinVh: number): string {
   return `calc(100svh + ${pinVh}svh)`;

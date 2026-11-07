@@ -1,15 +1,14 @@
-import { segment } from "../scroll/math";
 import type { SiteProgress } from "./header-state";
 
-/** Parte do palco do chat em que a faixa de luz sobe (início) e sai (fim). */
-export const WIPE_ZONE = 0.15;
+/** Quando o topo da seção que chega alcança o menu (fração da altura da tela, ~72 px), o menu muda de aparência. */
+export const HEADER_EDGE = 0.08;
 
-/** Em que seção do site o menu está, a partir do progresso (0–1) de cada palco. */
-export function siteSection(stages: { hero: number; chat: number; video2: number }): SiteProgress {
-  const { hero, chat, video2 } = stages;
-  if (video2 > 0) return { section: "video2", p: video2 };
-  if (chat <= 0) return { section: "hero-s2", p: hero };
-  if (chat < WIPE_ZONE) return { section: "wipe-in", p: chat / WIPE_ZONE };
-  if (chat <= 1 - WIPE_ZONE) return { section: "chat", p: segment(chat, WIPE_ZONE, 1 - WIPE_ZONE) };
-  return { section: "wipe-out", p: segment(chat, 1 - WIPE_ZONE, 1) };
+/**
+ * Em que seção do site o menu está. As seções se sobrepõem (a seguinte desliza por cima da anterior), então não basta o
+ * progresso de cada palco: `chatEdge` e `video2Edge` dizem onde está o topo da seção que chega (1 = abaixo da tela, 0 = no topo).
+ */
+export function siteSection(stages: { hero: number; chat: number; video2: number; chatEdge: number; video2Edge: number }): SiteProgress {
+  if (stages.video2Edge <= HEADER_EDGE) return { section: "video2", p: stages.video2 };
+  if (stages.chatEdge <= HEADER_EDGE) return { section: "chat", p: stages.chat };
+  return { section: "hero-s2", p: stages.hero };
 }

@@ -2,10 +2,9 @@
 
 import { useState, type PointerEvent } from "react";
 import { COPY } from "@/content/copy";
-import { visibleChat } from "@/lib/choreo/chat-script";
+import { CHAT_FROM, CHAT_TO, visibleChat } from "@/lib/choreo/chat-script";
 import { layerOffset, pointerTilt } from "@/lib/choreo/parallax";
-import { WIPE_ZONE } from "@/lib/choreo/site-section";
-import { wipeEdge } from "@/lib/choreo/wipe";
+import { STAGE_OVERLAP_VH } from "@/lib/choreo/overlap";
 import { easeInOutCubic, segment } from "@/lib/scroll/math";
 import { useReducedMotion } from "@/lib/use-reduced-motion";
 import { StageShell } from "./StageShell";
@@ -13,9 +12,13 @@ import { StageShell } from "./StageShell";
 /** Quanto de "rolagem virtual" (px) as camadas de paralaxe percorrem ao longo do palco. */
 const PARALLAX_PX = 700;
 
+/** Em que parte do palco o texto da seção termina de entrar. */
+const TEXT_IN = 0.1;
+
 /**
- * Seção do chatbot: faixa de luz que sobe (início) e sai (fim), fundo branco com paralaxe em três camadas e um
- * celular cuja conversa avança, mensagem a mensagem, com o scroll. Tudo é função do progresso do palco.
+ * Seção do chatbot: um cartão branco que desliza por cima da seção 2 (o celular já aparece na parte de baixo antes de
+ * a anterior acabar) e sai coberto pelo vídeo 2. Fundo com paralaxe em três camadas e um celular cuja conversa avança,
+ * mensagem a mensagem, com o scroll. Tudo é função do progresso do palco.
  */
 export function ChatSection() {
   const reduced = useReducedMotion();
@@ -23,13 +26,10 @@ export function ChatSection() {
   const [tilt, setTilt] = useState({ rx: 0, ry: 0 });
 
   const progress = reduced ? 0.5 : p;
-  const content = segment(progress, WIPE_ZONE, 1 - WIPE_ZONE); // progresso da parte branca
+  const content = segment(progress, CHAT_FROM, CHAT_TO); // progresso da conversa
   const { shown, typing } = reduced ? { shown: COPY.chat.messages, typing: null } : visibleChat(COPY.chat.messages, content);
 
-  const wipe = progress < 1 - WIPE_ZONE ? wipeEdge(segment(progress, 0, WIPE_ZONE), "up") : wipeEdge(segment(progress, 1 - WIPE_ZONE, 1), "down");
-  const edge = reduced ? 1 : wipe.edge;
-  const enter = reduced ? 1 : easeInOutCubic(segment(progress, WIPE_ZONE, 0.3));
-  const visible = reduced ? 1 : enter * (1 - segment(progress, 0.8, 0.85));
+  const enter = reduced ? 1 : easeInOutCubic(segment(progress, 0, TEXT_IN)); // o texto já está na tela quando o cartão chega; só se assenta (dobra → reto)
 
   // Cada camada anda numa velocidade; no meio do palco (p = 0,5) fica na posição-base.
   const layerY = (speed: number) => (reduced ? 0 : -(layerOffset(progress * PARALLAX_PX, speed) - layerOffset(PARALLAX_PX / 2, speed)));
@@ -42,29 +42,15 @@ export function ChatSection() {
   };
 
   return (
-    <StageShell id="chat" pinVh={reduced ? 0 : 350} onProgress={setP}>
+    <StageShell id="chat" pinVh={reduced ? 0 : 350} onProgress={setP} overlapVh={reduced ? 0 : STAGE_OVERLAP_VH} edge="light" zIndex={20}>
       <div
         id="chatbot"
-        className="relative h-full w-full overflow-hidden bg-void text-graphite"
+        className="relative h-full w-full overflow-hidden bg-white text-graphite"
         onPointerMove={onPointerMove}
         onPointerLeave={() => setTilt({ rx: 0, ry: 0 })}
       >
-        {/* Faixa de luz (degradê só preto↔branco): o branco sobe de baixo e sai por cima. */}
-        {/* Animada só com transform (scaleY/translateY): mexer em `height` a cada passo de scroll é layout shift. */}
-        <div data-wipe aria-hidden="true" className="absolute inset-0 origin-bottom bg-white" style={{ transform: `scaleY(${edge})` }} />
-        <div
-          aria-hidden="true"
-          className="absolute inset-x-0 bottom-0"
-          style={{
-            height: `${wipe.softness * 100}%`,
-            opacity: Math.min(1, edge * 8),
-            transform: `translateY(${-(edge / wipe.softness) * 100}%)`,
-            background: "linear-gradient(to top, #ffffff, rgba(255,255,255,0))",
-          }}
-        />
-
         {/* Paralaxe: fundo (marca d'água e forma), meio (monograma e cartões) e frente (pontos desfocados). */}
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={{ opacity: visible, perspective: 1200 }}>
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={{ perspective: 1200 }}>
           <div className="absolute inset-0" style={{ transform: `rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg)`, transformStyle: "preserve-3d" }}>
             <div className="absolute inset-0" style={{ transform: `translateY(${layerY(0.85)}px)` }}>
               <span className="absolute font-display leading-[0.8] font-black tracking-[-0.04em] text-gray-100 select-none" style={{ right: "3%", top: "10%", fontSize: "clamp(160px, 34vw, 520px)" }}>
@@ -73,7 +59,7 @@ export function ChatSection() {
               <span className="absolute rounded-full bg-gray-100" style={{ left: "-8%", bottom: "-14%", width: "36vw", height: "36vw" }} />
             </div>
             <div className="absolute inset-0" style={{ transform: `translateY(${layerY(0.55)}px)` }}>
-              <img src="/brand/dynamo-simbolo-grafite.png" alt="" className="absolute hidden w-14 md:block" style={{ left: "6%", top: "80%" }} />
+              <img src="/brand/dynamo-simbolo-grafite.png" alt="" className="absolute hidden w-14 md:block" style={{ left: "6%", top: "88%" }} />
               {COPY.chat.cards.map((card, i) => (
                 <div
                   key={card.label}
@@ -97,11 +83,10 @@ export function ChatSection() {
         </div>
 
         <div className="relative z-10 flex h-full flex-col items-center justify-center gap-5 px-6 pt-[72px] pb-6 md:flex-row md:justify-between md:gap-12 md:px-[8vw]">
-          <div className="self-start md:self-center" style={{ opacity: visible, transform: `perspective(900px) rotateX(${(1 - enter) * 28}deg)`, transformOrigin: "left bottom" }}>
-            <p className="m-0 font-display text-[clamp(10px,1vw,13px)] font-bold tracking-[0.4em] text-gray-500 uppercase">{COPY.chat.eyebrow}</p>
+          <div className="self-start md:self-center" style={{ transform: `perspective(900px) rotateX(${(1 - enter) * 28}deg)`, transformOrigin: "left bottom" }}>
+            <p className="eyebrow m-0 font-display font-bold text-gray-500 uppercase">{COPY.chat.eyebrow}</p>
             <h2
-              className="mt-3 mb-0 font-display text-[clamp(28px,5.2vw,84px)] leading-[0.9] font-black tracking-[-0.04em] whitespace-pre text-graphite uppercase"
-              style={{ textShadow: "1px 1px 0 #d4d4d4, 2px 2px 0 #c6c6c6" }}
+              className="mt-3 mb-0 font-display text-[clamp(22px,3.8vw,60px)] leading-[0.9] font-black tracking-[-0.04em] whitespace-pre text-graphite uppercase"
             >
               {COPY.chat.title}
             </h2>
@@ -116,8 +101,6 @@ export function ChatSection() {
               aspectRatio: "9 / 19.5",
               padding: "calc(var(--pw) * 0.03)",
               borderRadius: "calc(var(--pw) * 0.13)",
-              opacity: visible,
-              transform: `translateY(${(1 - enter) * 14}%) scale(${0.92 + 0.08 * enter})`,
             }}
           >
             <div className="relative flex h-full w-full flex-col overflow-hidden bg-white" style={{ borderRadius: "calc(var(--pw) * 0.105)" }}>

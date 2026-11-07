@@ -76,11 +76,17 @@ html.lenis body {
   --hero-margin: clamp(20px, 5vw, 72px);
   --hero-left: var(--hero-margin);
   --hero-bottom: clamp(48px, 12svh, 120px);
-  --hero-fs: clamp(24px, min(11.5vw, 17svh, calc(62vw / 8.92)), 128px);
+  --hero-fs: clamp(20px, min(8.3vw, 12.2svh, calc(45vw / 8.92)), 92px);
 }
 @media (max-aspect-ratio: 9/10) {
   .hero-vars {
-    --hero-fs: clamp(24px, min(11.5vw, 17svh, calc((100vw - 2 * var(--hero-margin)) / 8.92)), 128px);
+    --hero-fs: clamp(20px, min(8.3vw, 12.2svh, calc(0.72 * (100vw - 2 * var(--hero-margin)) / 8.92)), 92px);
   }
 }
 
+
+/* Sobrancelha (rótulo acima de um título): corpo pequeno e bem espaçado entre as letras. */
+.eyebrow {
+  font-size: clamp(10px, 0.85vw, 12px);
+  letter-spacing: 0.6em;
+}

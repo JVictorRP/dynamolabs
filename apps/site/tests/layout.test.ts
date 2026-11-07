@@ -6,10 +6,10 @@ import { blockHeightEm, wordIndexOf } from "../src/lib/title3d/layout-lines";
 describe("heroLayout (title anchored bottom-left, never wider than its share of the screen)", () => {
   const block = { widthEm: 8.9 }; // largura medida de "EM MOVIMENTO" na Archivo Black
 
-  it("on desktop the title takes at most 62% of the width, so it stays clear of the lit logo", () => {
+  it("on desktop the title takes at most 45% of the width, so it stays clear of the lit logo", () => {
     const l = heroLayout({ w: 1440, h: 900 }, block);
-    expect(l.fontPx).toBeCloseTo((0.62 * 1440) / 8.9, 2);
-    expect(l.fontPx * block.widthEm).toBeLessThanOrEqual(0.62 * 1440 + 0.01);
+    expect(l.fontPx).toBeCloseTo((0.45 * 1440) / 8.9, 2);
+    expect(l.fontPx * block.widthEm).toBeLessThanOrEqual(0.45 * 1440 + 0.01);
     expect(l.left).toBe(72);
     expect(l.bottom).toBe(108);
   });
@@ -21,8 +21,8 @@ describe("heroLayout (title anchored bottom-left, never wider than its share of 
     expect(l.left + l.fontPx * block.widthEm).toBeLessThanOrEqual(390 - 20 + 0.01);
   });
 
-  it("is capped at 128px on very large screens", () => {
-    expect(heroLayout({ w: 3000, h: 1800 }, { widthEm: 4 }).fontPx).toBe(128);
+  it("is capped at 92px on very large screens", () => {
+    expect(heroLayout({ w: 3000, h: 1800 }, { widthEm: 4 }).fontPx).toBe(92);
   });
 });
 
@@ -31,7 +31,7 @@ describe("s2Layout (title on the right, away from the notebook)", () => {
 
   it("sits in the upper right on a landscape screen: inside the right half, above 45% of the height, aligned right", () => {
     const l = s2Layout({ w: 1440, h: 900 }, block);
-    expect(l.fontPx).toBeCloseTo(0.085 * 900, 2);
+    expect(l.fontPx).toBeCloseTo(0.061 * 900, 2);
     expect(l.left).toBeGreaterThanOrEqual(720 - 0.01);
     expect(l.left + l.fontPx * block.widthEm).toBeCloseTo(1440 - 72, 2);
     expect(l.bottom).toBeCloseTo(0.74 * 900 - (2.52 * l.fontPx) / 2, 2); // centro a 26% do topo
@@ -40,9 +40,9 @@ describe("s2Layout (title on the right, away from the notebook)", () => {
 
   it("moves up to the top third on a portrait phone, leaving the notebook free", () => {
     const l = s2Layout({ w: 390, h: 844 }, block);
-    expect(l.fontPx).toBe(32);
-    expect(l.left).toBeCloseTo(390 - 20 - 7.7 * 32, 2);
-    expect(l.bottom).toBeCloseTo(844 * 0.7 - (2.52 * 32) / 2, 2);
+    expect(l.fontPx).toBe(24);
+    expect(l.left).toBeCloseTo(390 - 20 - 7.7 * 24, 2);
+    expect(l.bottom).toBeCloseTo(844 * 0.7 - (2.52 * 24) / 2, 2);
   });
 });
 

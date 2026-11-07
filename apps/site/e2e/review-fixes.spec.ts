@@ -82,8 +82,7 @@ test("the Chatbot links land in the middle of the chat stage, not on its first b
   await page.locator('footer nav a[href="#chatbot"]').click();
   await page.waitForFunction(() => Math.abs((window.__dynamo?.progress["chat"] ?? -1) - 0.5) < 0.06, undefined, { timeout: 10_000 });
   await page.waitForTimeout(700);
-  const white = await page.locator("[data-wipe]").evaluate((el) => el.getBoundingClientRect().height / window.innerHeight);
-  expect(white).toBeGreaterThan(0.95);
+  expect(await page.locator("#chatbot").evaluate((el) => getComputedStyle(el).backgroundColor)).toBe("rgb(255, 255, 255)");
   expect(await page.locator("[data-phone]").evaluate((el) => Number(getComputedStyle(el).opacity))).toBeGreaterThan(0.95);
   expect(new URL(page.url()).hash).toBe("#chatbot");
 });

@@ -16,8 +16,8 @@ function Frame({ id, n }: { id: "v1" | "v2"; n: number }) {
 }
 
 const SCRIM = "radial-gradient(ellipse at 20% 100%, rgba(10,10,10,0.85), rgba(10,10,10,0) 70%), linear-gradient(180deg, rgba(10,10,10,0.45) 0%, rgba(10,10,10,0) 40%, rgba(10,10,10,0.88) 100%)";
-const eyebrow = "m-0 font-display text-[clamp(11px,1.1vw,16px)] font-bold tracking-[0.4em] text-amber uppercase";
-const title = "m-0 font-display text-[clamp(36px,8vw,112px)] leading-[0.9] font-black tracking-[-0.04em] whitespace-pre text-white uppercase";
+const eyebrow = "eyebrow m-0 font-display font-bold text-amber uppercase";
+const title = "m-0 font-display text-[clamp(26px,5.8vw,80px)] leading-[0.9] font-black tracking-[-0.04em] whitespace-pre text-white uppercase";
 
 function DarkSection({ id, n, children, label }: { id: "v1" | "v2"; n: number; children: React.ReactNode; label: string }) {
   return (
@@ -52,8 +52,8 @@ export function Section2Static() {
 export function ChatStatic() {
   return (
     <section data-static="chat" className="bg-white px-[5vw] py-24 text-graphite">
-      <p className="m-0 font-display text-[clamp(11px,1.1vw,16px)] font-bold tracking-[0.4em] text-gray-500 uppercase">{COPY.chat.eyebrow}</p>
-      <h2 className="mt-3 mb-0 font-display text-[clamp(30px,6vw,80px)] leading-[0.9] font-black tracking-[-0.04em] whitespace-pre uppercase">{COPY.chat.title}</h2>
+      <p className="eyebrow m-0 font-display font-bold text-gray-500 uppercase">{COPY.chat.eyebrow}</p>
+      <h2 className="mt-3 mb-0 font-display text-[clamp(22px,4.4vw,58px)] leading-[0.9] font-black tracking-[-0.04em] whitespace-pre uppercase">{COPY.chat.title}</h2>
       <p className="mt-6 mb-0 max-w-xl font-display text-[clamp(16px,1.6vw,24px)] font-light text-gray-700">{COPY.chat.body}</p>
     </section>
   );

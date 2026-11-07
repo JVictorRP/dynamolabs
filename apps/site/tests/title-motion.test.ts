@@ -27,7 +27,7 @@ describe("heroTitleState (the hero folds away while the camera descends, 25–45
   });
 });
 
-describe("s2TitleState (rises from depth on the right, 45–60%, leaves in the breather, 80–88%)", () => {
+describe("s2TitleState (rises from depth on the right, 45–60%, then stays: the frame scrolls away with the page)", () => {
   it("is invisible before section 2 starts", () => {
     expect(s2TitleState(0.44).opacity).toBe(0);
   });
@@ -42,8 +42,13 @@ describe("s2TitleState (rises from depth on the right, 45–60%, leaves in the b
     for (const p of steps(0, 1, 100)) expect(s2TitleState(p).opacity).toBeLessThanOrEqual(0.85);
   });
 
-  it("is gone in the breather (no text at 95%)", () => {
-    expect(s2TitleState(0.95).opacity).toBe(0);
-    expect(s2TitleState(1).opacity).toBe(0);
+  it("is still on screen while the chat card starts sliding in (no empty screen between the sections)", () => {
+    expect(s2TitleState(0.9).opacity).toBe(0.85);
+    expect(s2TitleState(0.95).opacity).toBe(0.85);
+  });
+
+  it("never fades out on its own: it stays until the whole frame has scrolled off", () => {
+    expect(s2TitleState(1).opacity).toBe(0.85);
+    expect(s2TitleState(1).z).toBeCloseTo(0, 6);
   });
 });

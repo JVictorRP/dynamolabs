@@ -15,6 +15,7 @@ import { wordIndexOf } from "@/lib/title3d/layout-lines";
 import type { Title3D } from "@/lib/title3d/title3d";
 import { pickTier } from "@/lib/frames/tier";
 import { useReducedMotion } from "@/lib/use-reduced-motion";
+import { STAGE_OVERLAP_VH } from "@/lib/choreo/overlap";
 import { StageShell } from "./StageShell";
 import { Video2Static } from "./StaticSections";
 
@@ -206,7 +207,7 @@ function AnimatedVideo2Stage() {
   const style = (s: CSSProperties) => s;
 
   return (
-    <StageShell id="video2" pinVh={300} onProgress={onProgress}>
+    <StageShell id="video2" pinVh={300} onProgress={onProgress} overlapVh={STAGE_OVERLAP_VH} edge="dark" zIndex={30}>
       <div ref={rootRef} data-renderer={renderer ?? "loading"} className="relative h-full w-full bg-void">
         <canvas ref={canvasRef} aria-hidden="true" className="absolute inset-0 h-full w-full" />
 
@@ -228,7 +229,7 @@ function AnimatedVideo2Stage() {
 
         {layout && vp && (
           <>
-            <p data-copy="video2" className="absolute m-0 font-display font-bold tracking-[0.4em] text-amber uppercase" style={style({ left: layout.left, bottom: layout.bottom + blockPx + GAP, fontSize: Math.max(11, layout.fontPx * 0.2), opacity: EYEBROW_OPACITY })}>
+            <p data-copy="video2" className="eyebrow absolute m-0 font-display font-bold text-amber uppercase" style={style({ left: layout.left, bottom: layout.bottom + blockPx + GAP, opacity: EYEBROW_OPACITY })}>
               {COPY.video2.eyebrow}
             </p>
             <p data-copy="video2" className="absolute m-0 font-display font-light text-mist" style={style({ left: layout.left, top: vp.h - layout.bottom + GAP, width: size.width * layout.fontPx, fontSize: Math.min(26, Math.max(15, layout.fontPx * 0.26)), lineHeight: 1.3, opacity: SUPPORT_OPACITY })}>

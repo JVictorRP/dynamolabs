@@ -13,8 +13,6 @@ export type Title3DOptions = {
   keywordColor?: number;
   /** Largura máxima em em antes de quebrar linha (padrão 12). */
   maxWidthEm?: number;
-  /** Espessura da extrusão em em (padrão 0.14). */
-  depth?: number;
 };
 
 export type Title3D = {
@@ -56,30 +54,14 @@ function pathToShapes(path: Path): THREE.Shape[] {
 }
 
 /**
- * Título extrudado em 3D: uma malha por palavra (a palavra-chave leva outra cor), material físico levemente
- * translúcido e uma luz quente coerente com a cena do vídeo.
+ * Título para a cena 3D: uma malha por palavra (a palavra-chave leva outra cor). A letra é PLANA (sem espessura e sem
+ * sombreado, a cor é exatamente a do design system); o 3D está no movimento (dobra, profundidade, perspectiva).
  */
 export async function createTitle3D(opts: Title3DOptions): Promise<Title3D> {
   const font = await loadFont(opts.fontUrl);
-  const depth = opts.depth ?? 0.14;
   const lines = layoutLines(opts.text, opts.maxWidthEm ?? 12, (s) => font.getAdvanceWidth(s, 1));
 
-  const makeMaterial = (color: number) =>
-    new THREE.MeshPhysicalMaterial({
-      color,
-      roughness: 0.4,
-      metalness: 0.05,
-      clearcoat: 0.5,
-      clearcoatRoughness: 0.3,
-      emissive: 0x2a1c08,
-      emissiveIntensity: 0.15,
-      transparent: true,
-      opacity: 1,
-      depthWrite: false,
-    });
-  // Pré-passe de profundidade: só a face mais próxima de cada palavra é pintada, sem as faces de trás
-  // transparecendo por cima (que manchavam as letras quando o material é translúcido).
-  const depthOnly = new THREE.MeshBasicMaterial({ colorWrite: false });
+  const makeMaterial = (color: number) => new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 1, depthWrite: false, toneMapped: false });
   const base = makeMaterial(opts.color);
   const keyword = opts.keywordColor !== undefined ? makeMaterial(opts.keywordColor) : base;
   const materials = keyword === base ? [base] : [base, keyword];
@@ -88,11 +70,6 @@ export async function createTitle3D(opts: Title3DOptions): Promise<Title3D> {
   const object = new THREE.Group();
   const inner = new THREE.Group();
   object.add(inner);
-  // Luzes físicas (r155+): precisam de intensidade ~π para um branco ficar branco. Luz principal levemente quente.
-  object.add(new THREE.HemisphereLight(0xffffff, 0x4a3a28, 1.6));
-  const key = new THREE.DirectionalLight(0xfff1dc, 2.6);
-  key.position.set(2, 3, 4);
-  object.add(key);
 
   const geometries: THREE.BufferGeometry[] = [];
   let wordIndex = 0;
@@ -105,23 +82,11 @@ export async function createTitle3D(opts: Title3DOptions): Promise<Title3D> {
       const start = line.indexOf(word, from);
       from = start + word.length;
       const x = font.getAdvanceWidth(line.slice(0, start), 1);
-      const geometry = new THREE.ExtrudeGeometry(pathToShapes(font.getPath(word, x, 0, 1)), {
-        depth,
-        curveSegments: 10,
-        bevelEnabled: true,
-        bevelThickness: 0.012,
-        bevelSize: 0.008,
-        bevelSegments: 2,
-      });
+      const geometry = new THREE.ShapeGeometry(pathToShapes(font.getPath(word, x, 0, 1)), 10);
       geometries.push(geometry);
-      const prepass = new THREE.Mesh(geometry, depthOnly);
-      prepass.renderOrder = 0;
       const mesh = new THREE.Mesh(geometry, wordIndex === opts.keywordIndex ? keyword : base);
-      mesh.renderOrder = 1;
-      for (const m of [prepass, mesh]) {
-        m.position.y = y;
-        inner.add(m);
-      }
+      mesh.position.y = y;
+      inner.add(mesh);
       wordIndex++;
     }
   });
@@ -138,7 +103,6 @@ export async function createTitle3D(opts: Title3DOptions): Promise<Title3D> {
     dispose() {
       geometries.forEach((g) => g.dispose());
       materials.forEach((m) => m.dispose());
-      depthOnly.dispose();
     },
   };
 }

@@ -10,13 +10,13 @@ const isPortrait = (vp: Viewport) => vp.w < vp.h * 0.9;
 
 /**
  * Hero: título no canto inferior esquerdo, com espaço embaixo para a dica de rolagem. A fonte respeita a
- * largura real do título (`widthEm`): em tela larga ocupa no máximo 62% da largura (fica longe do logo aceso
+ * largura real do título (`widthEm`): em tela larga ocupa no máximo 45% da largura (fica longe do logo aceso
  * da cena); em tela vertical cabe entre as duas margens.
  */
 export function heroLayout(vp: Viewport, block: { widthEm: number }): BlockLayout {
-  const widthCap = (isPortrait(vp) ? vp.w - 2 * margin(vp) : vp.w * 0.62) / block.widthEm;
+  const widthCap = (isPortrait(vp) ? 0.72 * (vp.w - 2 * margin(vp)) : vp.w * 0.45) / block.widthEm;
   return {
-    fontPx: clamp(Math.min(vp.w * 0.115, vp.h * 0.17, widthCap), 24, 128),
+    fontPx: clamp(Math.min(vp.w * 0.083, vp.h * 0.122, widthCap), 20, 92),
     left: margin(vp),
     bottom: clamp(vp.h * 0.12, 48, 120),
   };
@@ -29,8 +29,8 @@ export function heroLayout(vp: Viewport, block: { widthEm: number }): BlockLayou
  */
 export function s2Layout(vp: Viewport, block: { widthEm: number; heightEm: number }): BlockLayout {
   const portrait = isPortrait(vp);
-  const widthCap = (portrait ? vp.w - 2 * margin(vp) : vp.w * 0.5 - margin(vp)) / block.widthEm;
-  const fontPx = clamp(Math.min(vp.w * 0.075, vp.h * (portrait ? 0.12 : 0.085), widthCap), 32, 96);
+  const widthCap = (0.72 * (portrait ? vp.w - 2 * margin(vp) : vp.w * 0.5 - margin(vp))) / block.widthEm;
+  const fontPx = clamp(Math.min(vp.w * 0.054, vp.h * (portrait ? 0.086 : 0.061), widthCap), 24, 70);
   const centerFromBottom = vp.h * (portrait ? 0.7 : 0.74);
   return {
     fontPx,
@@ -45,8 +45,8 @@ export function s2Layout(vp: Viewport, block: { widthEm: number; heightEm: numbe
  */
 export function video2Layout(vp: Viewport, block: { widthEm: number; heightEm: number }): BlockLayout {
   const portrait = isPortrait(vp);
-  const widthCap = (portrait ? vp.w - 2 * margin(vp) : vp.w * 0.55 - margin(vp)) / block.widthEm;
-  const fontPx = clamp(Math.min(vp.w * 0.075, vp.h * (portrait ? 0.12 : 0.085), widthCap), 30, 96);
+  const widthCap = (0.72 * (portrait ? vp.w - 2 * margin(vp) : vp.w * 0.55 - margin(vp))) / block.widthEm;
+  const fontPx = clamp(Math.min(vp.w * 0.054, vp.h * (portrait ? 0.086 : 0.061), widthCap), 24, 70);
   const centerFromBottom = vp.h * (portrait ? 0.7 : 0.74);
   return { fontPx, left: margin(vp), bottom: centerFromBottom - (block.heightEm * fontPx) / 2 };
 }

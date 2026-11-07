@@ -26,13 +26,12 @@ const GAP = 18; // px entre o bloco 3D e o texto HTML vizinho
 const P = "var(--p-hero-s2, 0)";
 const HERO_OPACITY = `clamp(0, calc((0.45 - ${P}) / 0.2), 1)`;
 const CUE_OPACITY = `clamp(0, calc((0.12 - ${P}) / 0.08), 1)`;
-const S2_LEAVE = `clamp(0, calc((0.86 - ${P}) / 0.04), 1)`;
-const S2_EYEBROW_OPACITY = `calc(clamp(0, calc((${P} - 0.5) / 0.08), 1) * ${S2_LEAVE})`;
-const S2_BODY_OPACITY = `calc(clamp(0, calc((${P} - 0.56) / 0.07), 1) * ${S2_LEAVE})`;
+const S2_EYEBROW_OPACITY = `clamp(0, calc((${P} - 0.5) / 0.08), 1)`;
+const S2_BODY_OPACITY = `clamp(0, calc((${P} - 0.56) / 0.07), 1)`;
 // Fallback sem WebGL: o mesmo movimento dos títulos 3D (dobra do hero, subida da seção 2), em CSS 3D puro.
 const HERO_FOLD_3D = `perspective(900px) rotateX(calc(clamp(0, calc((${P} - 0.25) / 0.2), 1) * -69deg))`;
 const S2_RISE_3D = `perspective(900px) rotateX(calc((1 - clamp(0, calc((${P} - 0.45) / 0.15), 1)) * 46deg))`;
-const BREATHER = `clamp(0, calc((${P} - 0.8) / 0.2), 1)`;
+const BREATHER = `clamp(0, calc((${P} - 0.92) / 0.08), 1)`;
 
 type Sizes = { hero: { width: number; height: number }; s2: { width: number; height: number } };
 /** Tamanhos medidos dos títulos (iguais aos do 3D: ver title-sizes.ts), para o texto nascer já no lugar certo. */
@@ -218,7 +217,7 @@ function AnimatedHeroStage() {
           <>
         <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={style({ background: "radial-gradient(ellipse at 60% 40%, rgba(10,10,10,0) 35%, rgba(10,10,10,0.88) 100%), linear-gradient(180deg, rgba(10,10,10,0.45) 0%, rgba(10,10,10,0) 40%, rgba(10,10,10,0.88) 100%)" })} />
         <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={style({ opacity: HERO_OPACITY, background: "radial-gradient(ellipse 75% 62% at 12% 100%, rgba(10,10,10,0.82), rgba(10,10,10,0) 70%)" })} />
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={style({ opacity: `calc(clamp(0, calc((${P} - 0.4) / 0.15), 1) * ${S2_LEAVE})`, background: "radial-gradient(ellipse 60% 75% at 92% 50%, rgba(10,10,10,0.75), rgba(10,10,10,0) 72%)" })} />
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={style({ opacity: `clamp(0, calc((${P} - 0.4) / 0.15), 1)`, background: "radial-gradient(ellipse 60% 75% at 92% 50%, rgba(10,10,10,0.75), rgba(10,10,10,0) 72%)" })} />
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-void" style={style({ opacity: `calc(${BREATHER} * 0.92)` })} />
 
           </>
@@ -246,7 +245,7 @@ function AnimatedHeroStage() {
           className="absolute flex flex-col gap-[10px]"
           style={style({ left: "var(--hero-left)", bottom: `calc(var(--hero-bottom) + ${TITLE_SIZE_EM.hero.height} * var(--hero-fs) + ${GAP}px)`, opacity: HERO_OPACITY })}
         >
-          <p className="m-0 font-display font-bold tracking-[0.4em] text-amber uppercase" style={style({ fontSize: "max(11px, calc(0.17 * var(--hero-fs)))" })}>
+          <p className="eyebrow m-0 font-display font-bold text-amber uppercase">
             {COPY.hero.eyebrow}
           </p>
           <p className="m-0 font-display font-light text-gray-300 italic" style={style({ fontSize: "calc(0.32 * var(--hero-fs))", lineHeight: 1 })}>
@@ -272,7 +271,7 @@ function AnimatedHeroStage() {
         )}
         {s2 && (
           <>
-            <p data-copy="s2" className="absolute m-0 font-display font-bold tracking-[0.4em] text-amber uppercase" style={style({ left: s2.left, bottom: s2.bottom + s2BlockPx + GAP, fontSize: Math.max(11, s2.fontPx * 0.2), opacity: S2_EYEBROW_OPACITY })}>
+            <p data-copy="s2" className="eyebrow absolute m-0 font-display font-bold text-amber uppercase" style={style({ left: s2.left, bottom: s2.bottom + s2BlockPx + GAP, opacity: S2_EYEBROW_OPACITY })}>
               {COPY.s2.eyebrow}
             </p>
             <p data-copy="s2" className="absolute m-0 font-display font-light text-mist" style={style({ left: s2.left, top: layouts!.vp.h - s2.bottom + GAP, width: sizes.s2.width * s2.fontPx, fontSize: Math.min(26, Math.max(15, s2.fontPx * 0.26)), lineHeight: 1.3, opacity: S2_BODY_OPACITY })}>

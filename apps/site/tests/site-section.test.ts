@@ -1,34 +1,25 @@
 import { describe, expect, it } from "vitest";
-import { siteSection } from "../src/lib/choreo/site-section";
+import { HEADER_EDGE, siteSection } from "../src/lib/choreo/site-section";
 
-const at = (hero: number, chat: number, video2 = 0) => siteSection({ hero, chat, video2 });
-const expectSection = (got: ReturnType<typeof at>, section: string, p: number) => {
-  expect(got.section).toBe(section);
-  expect(got.p).toBeCloseTo(p, 9); // aritmética de ponto flutuante: 0,925 − 0,85 não é exatamente 0,075
-};
+// `chatEdge` / `video2Edge`: onde está o topo da seção que chega, em fração da altura da tela (1 = logo abaixo, 0 = encheu a tela).
+const at = (s: { hero?: number; chat?: number; video2?: number; chatEdge?: number; video2Edge?: number }) =>
+  siteSection({ hero: 0, chat: 0, video2: 0, chatEdge: 1, video2Edge: 1, ...s });
 
-describe("siteSection (which section the menu is in, from the stages' progress)", () => {
-  it("is the video stage until the chat stage starts", () => {
-    expectSection(at(0.3, 0), "hero-s2", 0.3);
-    expectSection(at(1, 0), "hero-s2", 1);
+describe("siteSection (which section the menu is in, from the stages' progress and where the incoming section's top edge is)", () => {
+  it("is the video stage while the next section is still below the menu", () => {
+    expect(at({ hero: 0.3 })).toEqual({ section: "hero-s2", p: 0.3 });
+    expect(at({ hero: 1, chatEdge: 0.5 })).toEqual({ section: "hero-s2", p: 1 });
   });
 
-  it("rises the white band over the first 15% of the chat stage", () => {
-    expectSection(at(1, 0.075), "wipe-in", 0.5);
+  it("switches to the chat section the moment its top edge reaches the menu, not before", () => {
+    expect(at({ hero: 1, chatEdge: HEADER_EDGE + 0.01 }).section).toBe("hero-s2");
+    expect(at({ hero: 1, chatEdge: HEADER_EDGE }).section).toBe("chat");
+    expect(at({ hero: 1, chat: 0.5, chatEdge: 0 })).toEqual({ section: "chat", p: 0.5 });
   });
 
-  it("is the white chat section between 15% and 85%", () => {
-    expectSection(at(1, 0.5), "chat", 0.5);
-    expectSection(at(1, 0.15), "chat", 0);
-    expectSection(at(1, 0.85), "chat", 1);
-  });
-
-  it("leaves over the last 15% and stays in the wipe-out until the next stage starts", () => {
-    expectSection(at(1, 0.925), "wipe-out", 0.5);
-    expectSection(at(1, 1), "wipe-out", 1);
-  });
-
-  it("is the second video stage once it has started", () => {
-    expectSection(at(1, 1, 0.2), "video2", 0.2);
+  it("switches to the closing video when its top edge reaches the menu, and stays there for the footer", () => {
+    expect(at({ chat: 1, chatEdge: 0, video2Edge: HEADER_EDGE + 0.01 }).section).toBe("chat");
+    expect(at({ chat: 1, chatEdge: 0, video2Edge: HEADER_EDGE }).section).toBe("video2");
+    expect(at({ chat: 1, chatEdge: 0, video2: 0.2, video2Edge: 0 })).toEqual({ section: "video2", p: 0.2 });
   });
 });

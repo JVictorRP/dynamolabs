@@ -1,6 +1,6 @@
 import { damp } from "../scroll/math";
 import { ensureSmoothScroll } from "./smooth-scroll";
-import { stageProgress, stageWrapperHeight } from "./stage-progress";
+import { stageEdge, stageProgress, stageWrapperHeight } from "./stage-progress";
 
 export type StageId = "hero-s2" | "chat" | "video2";
 
@@ -20,6 +20,11 @@ export function subscribeProgress(callback: () => void): () => void {
 /** Último progresso publicado por um palco (0 se ainda não existe). */
 export function getStageProgress(id: StageId): number {
   return typeof window === "undefined" ? 0 : (window.__dynamo?.progress[id] ?? 0);
+}
+
+/** Último topo publicado de um palco (1 se ainda não existe: abaixo da tela). */
+export function getStageEdge(id: StageId): number {
+  return typeof window === "undefined" ? 1 : (window.__dynamo?.edge?.[id] ?? 1);
 }
 
 /** Lê o progresso atual do palco a partir do layout. `wrapper` contém um elemento `[data-sticky]`. */
@@ -43,11 +48,16 @@ export function registerStage(el: HTMLElement, opts: { id: StageId; pinVh: numbe
   let last = born;
   let current = measureStageProgress(el);
   let emitted = Number.NaN;
+  let emittedEdge = Number.NaN;
   let raf = 0;
 
   const emit = (p: number) => {
-    if (Math.abs(p - emitted) < 1e-5) return;
+    // A seção que desliza por cima da anterior se move com o progresso parado em 0: o topo também é uma mudança a publicar.
+    const edge = stageEdge(el.getBoundingClientRect().top, window.innerHeight);
+    if (Math.abs(p - emitted) < 1e-5 && Math.abs(edge - emittedEdge) < 1e-4) return;
     emitted = p;
+    emittedEdge = edge;
+    (dyn.edge ??= {})[opts.id] = edge;
     el.style.setProperty(`--p-${opts.id}`, p.toFixed(5));
     dyn.progress[opts.id] = p;
     dyn.history.push(p);

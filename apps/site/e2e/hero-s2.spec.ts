@@ -49,13 +49,14 @@ test("section 2: the title sits on the right half, away from the notebook, and t
   expect(titles.s2.opacity).toBeCloseTo(0.85, 3);
 });
 
-test("breather: no text is visible at 95%", async ({ page }) => {
+test("at 95% the hero block is gone and section 2 is still on screen (the chat card is sliding in under it, no empty screen)", async ({ page }) => {
   await open(page);
   await goTo(page, 0.95);
-  for (const o of await opacityOf(page, "[data-copy]")) expect(o).toBe(0);
+  for (const o of await opacityOf(page, '[data-copy="hero"], [data-copy="cue"]')) expect(o).toBe(0);
+  for (const o of await opacityOf(page, '[data-copy="s2"]')) expect(o).toBe(1);
   const titles = await page.evaluate(() => window.__dynamo!.titles!);
   expect(titles.hero.opacity).toBe(0);
-  expect(titles.s2.opacity).toBe(0);
+  expect(titles.s2.opacity).toBeCloseTo(0.85, 3);
 });
 
 /** Diferença média absoluta por canal (0–255) entre duas capturas PNG, medida dentro do navegador. */

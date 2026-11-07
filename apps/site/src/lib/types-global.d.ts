@@ -18,6 +18,8 @@ declare global {
     /** Progresso suavizado de cada palco e o histórico dos valores publicados (para testes e depuração). */
     __dynamo?: {
       progress: Record<string, number>;
+      /** Topo de cada palco em fração da altura da tela (1 = abaixo da tela, 0 = no topo). */
+      edge?: Record<string, number>;
       history: number[];
       /** Resolve quando os frames do palco chegaram e o quadro foi desenhado (usado pelos testes). */
       settle?: Record<string, () => Promise<void>>;

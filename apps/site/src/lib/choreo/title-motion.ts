@@ -18,14 +18,13 @@ export function heroTitleState(p: number): TitleState {
   return { rotX: lerp(0, HERO_FOLD, t), z: lerp(0, -2.5, t), opacity: lerp(1, 0, t), x: 0, y: lerp(0, -0.3, t) };
 }
 
-/** Seção 2: sobe da profundidade, pelo lado direito, entre 45% e 60%; sai no respiro, entre 80% e 88%. */
+/** Seção 2: sobe da profundidade, pelo lado direito, entre 45% e 60%; depois fica (o quadro rola para fora junto com a página). */
 export function s2TitleState(p: number): TitleState {
   const enter = easeInOutCubic(segment(p, 0.45, 0.6));
-  const leave = easeInOutCubic(segment(p, 0.8, 0.88));
   return {
-    rotX: lerp(0.8, 0, enter) - 0.8 * leave,
-    z: lerp(-2, 0, enter) - leave,
-    opacity: S2_OPACITY * enter * (1 - leave),
+    rotX: lerp(0.8, 0, enter),
+    z: lerp(-2, 0, enter),
+    opacity: S2_OPACITY * enter,
     x: lerp(1.5, 0, enter),
     y: lerp(-0.5, 0, enter),
   };
