@@ -1,5 +1,5 @@
 # Site institucional (dynamo.business): exportação estática do Next servida pelo nginx.
-# Build:  docker compose -f docker-compose.yml -f deploy/site/docker-compose.site.yml build site
+# Build (Easypanel): serviço App, Build → Dockerfile, arquivo Dockerfile.site, caminho /  (ver deploy/site/README.md)
 FROM node:22-alpine AS builder
 RUN corepack enable
 WORKDIR /app
