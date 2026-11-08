@@ -1,5 +1,5 @@
 /**
- * Textos do site. `status: "provisional"` até o João Victor aprovar a copy final:
+ * Textos do site. `status: "final"` desde a aprovação do João Victor (volte a "provisional" para bloquear a publicação):
  * `pnpm --filter site check:release` falha enquanto não for "final".
  */
 export const COPY = {

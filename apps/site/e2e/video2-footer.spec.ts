@@ -112,10 +112,10 @@ test("footer: the closing phrase fits on the screen and covers nothing", async (
   }
 });
 
-test("legal pages exist and say that their text is provisional", async ({ page }) => {
+test("approved legal pages exist and no longer carry the provisional notice", async ({ page }) => {
   for (const path of ["/privacidade", "/termos"]) {
     await page.goto(path);
     await expect(page.locator("h1")).toBeVisible();
-    await expect(page.getByRole("note")).toContainText("provisório");
+    await expect(page.getByRole("note")).toHaveCount(0);
   }
 });

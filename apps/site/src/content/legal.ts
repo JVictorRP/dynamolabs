@@ -1,7 +1,7 @@
 /**
- * Estado dos textos legais (política de privacidade e termos de uso). Ficam "provisional" até o jurídico/LGPD
- * aprovar a versão final; `check:release` bloqueia a publicação enquanto não for "final".
+ * Estado dos textos legais (política de privacidade e termos de uso). Aprovados pelo João Victor ("final"); com
+ * "provisional" a página mostra o aviso de texto provisório e `check:release` bloqueia a publicação.
  */
 export const LEGAL = {
-  status: "provisional" as "provisional" | "final",
+  status: "final" as "provisional" | "final",
 };
