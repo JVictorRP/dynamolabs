@@ -3,7 +3,7 @@
  * `pnpm --filter site check:release` falha enquanto não for "final".
  */
 export const COPY = {
-  status: "provisional" as "provisional" | "final",
+  status: "final" as "provisional" | "final",
   nav: {
     links: [
       { href: "#chatbot", label: "Chatbot" },
