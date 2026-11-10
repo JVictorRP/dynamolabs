@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { COPY } from "@/content/copy";
 import { TITLE_SIZE_EM } from "@/content/title-sizes";
 import { registerHideText } from "@/lib/choreo/debug-hooks";
 import { breather, heroScrim, s2Scrim } from "@/lib/choreo/scrims";
@@ -16,6 +15,7 @@ import { pickTier } from "@/lib/frames/tier";
 import { useReducedMotion } from "@/lib/use-reduced-motion";
 import heroManifest from "../../public/frames/v1/manifest.json";
 import { DecoText } from "./DecoText";
+import { useCopy } from "./LocaleProvider";
 import { HeroStatic, Section2Static } from "./StaticSections";
 import { StageShell } from "./StageShell";
 
@@ -43,11 +43,12 @@ const style = (s: CSSProperties) => s;
 
 /** Hero + seção 2: com "reduzir movimento" entram as versões estáticas, sem palco preso. */
 export function HeroStage() {
+  const copy = useCopy();
   const reduced = useReducedMotion();
   return reduced ? (
     <>
-      <HeroStatic />
-      <Section2Static />
+      <HeroStatic copy={copy} />
+      <Section2Static copy={copy} />
     </>
   ) : (
     <AnimatedHeroStage />
@@ -55,6 +56,7 @@ export function HeroStage() {
 }
 
 function AnimatedHeroStage() {
+  const copy = useCopy();
   const rootRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stageRef = useRef<StageHandle | null>(null);
@@ -109,9 +111,9 @@ function AnimatedHeroStage() {
         if (stage.scene) {
           try {
             const { createTitle3D } = await import("@/lib/title3d/title3d");
-            const hero = await createTitle3D({ text: COPY.hero.title, fontUrl: FONT_URL, color: 0xffffff, keywordIndex: wordIndexOf(COPY.hero.title, COPY.hero.keyword), keywordColor: 0xffb339 });
+            const hero = await createTitle3D({ text: copy.hero.title, fontUrl: FONT_URL, color: 0xffffff, keywordIndex: wordIndexOf(copy.hero.title, copy.hero.keyword), keywordColor: 0xffb339 });
             try {
-              const s2 = await createTitle3D({ text: COPY.s2.title, fontUrl: FONT_URL, color: 0xffffff, keywordIndex: wordIndexOf(COPY.s2.title, COPY.s2.keyword), keywordColor: 0xffb339 });
+              const s2 = await createTitle3D({ text: copy.s2.title, fontUrl: FONT_URL, color: 0xffffff, keywordIndex: wordIndexOf(copy.s2.title, copy.s2.keyword), keywordColor: 0xffb339 });
               titles = { hero, s2 };
             } catch {
               hero.dispose();
@@ -159,7 +161,7 @@ function AnimatedHeroStage() {
       stageRef.current = null;
       titlesRef.current = null;
     };
-  }, [apply]);
+  }, [apply, copy]);
 
   // Acompanha o tamanho do palco para recalcular o layout.
   useEffect(() => {
@@ -226,7 +228,7 @@ function AnimatedHeroStage() {
         {/* Hero: bloco no canto inferior esquerdo */}
         {/* O título real fica SEMPRE sr-only (leitores de tela e SEO, nunca se move). A cópia visual (aria-hidden) só passa a
             existir quando o layout está pronto: inserida, não deslocada (mover uma caixa já pintada seria layout shift). */}
-        <h1 className="sr-only">{COPY.hero.title}</h1>
+        <h1 className="sr-only">{copy.hero.title}</h1>
         <div
           aria-hidden="true"
           data-title="hero"
@@ -238,7 +240,7 @@ function AnimatedHeroStage() {
             ...(flat ? { opacity: HERO_OPACITY, transform: HERO_FOLD_3D, transformOrigin: "left bottom" } : {}),
           })}
         >
-          {COPY.hero.title}
+          {copy.hero.title}
         </div>
         <div
           data-copy="hero"
@@ -246,38 +248,38 @@ function AnimatedHeroStage() {
           style={style({ left: "var(--hero-left)", bottom: `calc(var(--hero-bottom) + ${TITLE_SIZE_EM.hero.height} * var(--hero-fs) + ${GAP}px)`, opacity: HERO_OPACITY })}
         >
           <p className="eyebrow m-0 font-display font-bold text-amber uppercase">
-            {COPY.hero.eyebrow}
+            {copy.hero.eyebrow}
           </p>
           <p className="m-0 font-display font-light text-gray-300 italic" style={style({ fontSize: "calc(0.32 * var(--hero-fs))", lineHeight: 1 })}>
-            {COPY.hero.support}
+            {copy.hero.support}
           </p>
         </div>
-        <DecoText lines={COPY.hero.deco} style={style({ left: "var(--hero-left)", top: 104, opacity: HERO_OPACITY })} />
+        <DecoText lines={copy.hero.deco} style={style({ left: "var(--hero-left)", top: 104, opacity: HERO_OPACITY })} />
         <p
           data-copy="cue"
           className="absolute m-0 flex items-center gap-3 font-display text-[clamp(10px,1.1vw,14px)] font-medium tracking-[0.22em] text-gray-300 uppercase"
           style={style({ left: "var(--hero-left)", bottom: "max(20px, calc(var(--hero-bottom) * 0.4))", opacity: CUE_OPACITY })}
         >
           <span className="inline-block size-[6px] rounded-full bg-teal" />
-          {COPY.hero.cue}
+          {copy.hero.cue}
         </p>
 
         {/* Seção 2: bloco à direita, oposto ao assunto (o caderno) */}
-        <h2 className="sr-only">{COPY.s2.title}</h2>
+        <h2 className="sr-only">{copy.s2.title}</h2>
         {s2 && (
           <div aria-hidden="true" data-title="s2" className={mirrorClass} style={mirror(s2, S2_EYEBROW_OPACITY, S2_RISE_3D)}>
-            {COPY.s2.title}
+            {copy.s2.title}
           </div>
         )}
         {s2 && (
           <>
             <p data-copy="s2" className="eyebrow absolute m-0 font-display font-bold text-amber uppercase" style={style({ left: s2.left, bottom: s2.bottom + s2BlockPx + GAP, opacity: S2_EYEBROW_OPACITY })}>
-              {COPY.s2.eyebrow}
+              {copy.s2.eyebrow}
             </p>
             <p data-copy="s2" className="absolute m-0 font-display font-light text-mist" style={style({ left: s2.left, top: layouts!.vp.h - s2.bottom + GAP, width: sizes.s2.width * s2.fontPx, fontSize: Math.min(26, Math.max(15, s2.fontPx * 0.26)), lineHeight: 1.3, opacity: S2_BODY_OPACITY })}>
-              {COPY.s2.body}
+              {copy.s2.body}
             </p>
-            <DecoText lines={COPY.s2.deco} style={style({ left: layouts!.s2.left - sizes.s2.width * s2.fontPx * 0.55, top: 104, opacity: S2_EYEBROW_OPACITY })} />
+            <DecoText lines={copy.s2.deco} style={style({ left: layouts!.s2.left - sizes.s2.width * s2.fontPx * 0.55, top: 104, opacity: S2_EYEBROW_OPACITY })} />
           </>
         )}
       </div>

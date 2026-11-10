@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type PointerEvent } from "react";
-import { COPY } from "@/content/copy";
+import { useCopy } from "./LocaleProvider";
 import { CHAT_FROM, CHAT_TO, visibleChat } from "@/lib/choreo/chat-script";
 import { layerOffset, pointerTilt } from "@/lib/choreo/parallax";
 import { STAGE_OVERLAP_VH } from "@/lib/choreo/overlap";
@@ -21,13 +21,14 @@ const TEXT_IN = 0.1;
  * mensagem a mensagem, com o scroll. Tudo é função do progresso do palco.
  */
 export function ChatSection() {
+  const copy = useCopy();
   const reduced = useReducedMotion();
   const [p, setP] = useState(0);
   const [tilt, setTilt] = useState({ rx: 0, ry: 0 });
 
   const progress = reduced ? 0.5 : p;
   const content = segment(progress, CHAT_FROM, CHAT_TO); // progresso da conversa
-  const { shown, typing } = reduced ? { shown: COPY.chat.messages, typing: null } : visibleChat(COPY.chat.messages, content);
+  const { shown, typing } = reduced ? { shown: copy.chat.messages, typing: null } : visibleChat(copy.chat.messages, content);
 
   const enter = reduced ? 1 : easeInOutCubic(segment(progress, 0, TEXT_IN)); // o texto já está na tela quando o cartão chega; só se assenta (dobra → reto)
 
@@ -54,13 +55,13 @@ export function ChatSection() {
           <div className="absolute inset-0" style={{ transform: `rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg)`, transformStyle: "preserve-3d" }}>
             <div className="absolute inset-0" style={{ transform: `translateY(${layerY(0.85)}px)` }}>
               <span className="absolute font-display leading-[0.8] font-black tracking-[-0.04em] text-gray-100 select-none" style={{ right: "3%", top: "10%", fontSize: "clamp(160px, 34vw, 520px)" }}>
-                {COPY.chat.watermark}
+                {copy.chat.watermark}
               </span>
               <span className="absolute rounded-full bg-gray-100" style={{ left: "-8%", bottom: "-14%", width: "36vw", height: "36vw" }} />
             </div>
             <div className="absolute inset-0" style={{ transform: `translateY(${layerY(0.55)}px)` }}>
               <img src="/brand/dynamo-simbolo-grafite.png" alt="" className="absolute hidden w-14 md:block" style={{ left: "6%", top: "88%" }} />
-              {COPY.chat.cards.map((card, i) => (
+              {copy.chat.cards.map((card, i) => (
                 <div
                   key={card.label}
                   className={`absolute hidden rounded-lg bg-gray-100 px-4 py-3 md:block ${i === 0 ? "md:left-[50%] md:top-[64%]" : "md:left-[53%] md:top-[12%]"}`}
@@ -84,13 +85,13 @@ export function ChatSection() {
 
         <div className="relative z-10 flex h-full flex-col items-center justify-center gap-5 px-6 pt-[72px] pb-6 md:flex-row md:justify-between md:gap-12 md:px-[8vw]">
           <div className="self-start md:self-center" style={{ transform: `perspective(900px) rotateX(${(1 - enter) * 28}deg)`, transformOrigin: "left bottom" }}>
-            <p className="eyebrow m-0 font-display font-bold text-gray-500 uppercase">{COPY.chat.eyebrow}</p>
+            <p className="eyebrow m-0 font-display font-bold text-gray-500 uppercase">{copy.chat.eyebrow}</p>
             <h2
               className="mt-3 mb-0 font-display text-[clamp(22px,3.8vw,60px)] leading-[0.9] font-black tracking-[-0.04em] whitespace-pre text-graphite uppercase"
             >
-              {COPY.chat.title}
+              {copy.chat.title}
             </h2>
-            <p className="mt-5 mb-0 hidden max-w-[30rem] font-display text-[clamp(15px,1.4vw,22px)] leading-[1.35] font-light text-gray-700 md:block">{COPY.chat.body}</p>
+            <p className="mt-5 mb-0 hidden max-w-[30rem] font-display text-[clamp(15px,1.4vw,22px)] leading-[1.35] font-light text-gray-700 md:block">{copy.chat.body}</p>
           </div>
 
           <div
@@ -110,8 +111,8 @@ export function ChatSection() {
                   <img src="/brand/dynamo-simbolo-grafite.png" alt="" className="w-[58%]" />
                 </span>
                 <div>
-                  <p className="m-0 leading-tight font-bold text-graphite">{COPY.chat.assistant.name}</p>
-                  <p className="m-0 text-[0.8em] leading-tight text-gray-500">{COPY.chat.assistant.status}</p>
+                  <p className="m-0 leading-tight font-bold text-graphite">{copy.chat.assistant.name}</p>
+                  <p className="m-0 text-[0.8em] leading-tight text-gray-500">{copy.chat.assistant.status}</p>
                 </div>
               </div>
               <ol className="m-0 flex flex-1 list-none flex-col justify-end gap-[0.5em] overflow-hidden p-[5%]" style={{ fontSize: "calc(var(--pw) * 0.047)" }}>

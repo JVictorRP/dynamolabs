@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { COPY } from "@/content/copy";
 import { TITLE_SIZE_EM } from "@/content/title-sizes";
 import { registerHideText } from "@/lib/choreo/debug-hooks";
 import { scrollToY } from "@/lib/choreo/smooth-scroll";
@@ -17,6 +16,7 @@ import { pickTier } from "@/lib/frames/tier";
 import { useReducedMotion } from "@/lib/use-reduced-motion";
 import { STAGE_OVERLAP_VH } from "@/lib/choreo/overlap";
 import { StageShell } from "./StageShell";
+import { useCopy } from "./LocaleProvider";
 import { Video2Static } from "./StaticSections";
 
 const FONT_URL = "/fonts/ArchivoBlack-Regular.ttf";
@@ -38,11 +38,13 @@ const CTA_PROGRESS = 0.92;
  */
 /** Seção 4: com "reduzir movimento" entra a versão estática (último frame + CTA), sem palco preso. */
 export function Video2Stage() {
+  const copy = useCopy();
   const reduced = useReducedMotion();
-  return reduced ? <Video2Static /> : <AnimatedVideo2Stage />;
+  return reduced ? <Video2Static copy={copy} /> : <AnimatedVideo2Stage />;
 }
 
 function AnimatedVideo2Stage() {
+  const copy = useCopy();
   const rootRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stageRef = useRef<StageHandle | null>(null);
@@ -132,7 +134,7 @@ function AnimatedVideo2Stage() {
         if (stage.scene) {
           try {
             const { createTitle3D } = await import("@/lib/title3d/title3d");
-            title = await createTitle3D({ text: COPY.video2.title, fontUrl: FONT_URL, color: 0xffffff, keywordIndex: wordIndexOf(COPY.video2.title, COPY.video2.keyword), keywordColor: 0xffb339 });
+            title = await createTitle3D({ text: copy.video2.title, fontUrl: FONT_URL, color: 0xffffff, keywordIndex: wordIndexOf(copy.video2.title, copy.video2.keyword), keywordColor: 0xffb339 });
           } catch {
             title = null; // sem fonte/3D: segue com o vídeo e o título HTML achatado
           }
@@ -174,7 +176,7 @@ function AnimatedVideo2Stage() {
       stageRef.current = null;
       titleRef.current = null;
     };
-  }, [apply, started]);
+  }, [apply, started, copy]);
 
   useEffect(() => {
     const canvas = canvasRef.current!;
@@ -215,7 +217,7 @@ function AnimatedVideo2Stage() {
           <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={style({ background: "radial-gradient(ellipse 62% 50% at 16% 26%, rgba(10,10,10,0.78), rgba(10,10,10,0) 72%), linear-gradient(180deg, rgba(10,10,10,0.45) 0%, rgba(10,10,10,0) 40%, rgba(10,10,10,0.88) 100%)" })} />
         )}
 
-        <h2 className="sr-only">{COPY.video2.title}</h2>
+        <h2 className="sr-only">{copy.video2.title}</h2>
         {layout && (
           <div
             aria-hidden="true"
@@ -223,17 +225,17 @@ function AnimatedVideo2Stage() {
             className={`absolute m-0 font-display leading-[0.9] font-black tracking-[-0.04em] whitespace-pre uppercase pointer-events-none select-none transition-colors duration-300 ${flat ? "text-white" : "text-transparent"}`}
             style={style({ left: layout.left, bottom: layout.bottom - layout.fontPx * 0.2, fontSize: layout.fontPx, opacity: flat ? EYEBROW_OPACITY : undefined, ...(flat ? { transform: `perspective(900px) rotateX(calc((1 - clamp(0, calc((${P} - 0.02) / 0.16), 1)) * 46deg))`, transformOrigin: "left bottom" } : {}) })}
           >
-            {COPY.video2.title}
+            {copy.video2.title}
           </div>
         )}
 
         {layout && vp && (
           <>
             <p data-copy="video2" className="eyebrow absolute m-0 font-display font-bold text-amber uppercase" style={style({ left: layout.left, bottom: layout.bottom + blockPx + GAP, opacity: EYEBROW_OPACITY })}>
-              {COPY.video2.eyebrow}
+              {copy.video2.eyebrow}
             </p>
             <p data-copy="video2" className="absolute m-0 font-display font-light text-mist" style={style({ left: layout.left, top: vp.h - layout.bottom + GAP, width: size.width * layout.fontPx, fontSize: Math.min(26, Math.max(15, layout.fontPx * 0.26)), lineHeight: 1.3, opacity: SUPPORT_OPACITY })}>
-              {COPY.video2.support}
+              {copy.video2.support}
             </p>
             <a
               data-cta
@@ -242,7 +244,7 @@ function AnimatedVideo2Stage() {
               className="absolute rounded-xl bg-teal px-8 py-4 font-label text-[clamp(10px,1vw,13px)] font-bold tracking-[0.2em] text-graphite uppercase focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
               style={style({ left: layout.left, bottom: Math.max(28, vp.h * 0.09), opacity: CTA_OPACITY, pointerEvents: ctaOn ? "auto" : "none" })}
             >
-              {COPY.video2.cta}
+              {copy.video2.cta}
             </a>
           </>
         )}

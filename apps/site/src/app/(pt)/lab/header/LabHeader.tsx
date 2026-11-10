@@ -19,7 +19,7 @@ export function LabHeader() {
   }, []);
   return (
     <main className="min-h-svh bg-void">
-      <Header progress={progress} links={LINKS} cta={{ href: "#contato", label: "Fale conosco" }} />
+      <Header progress={progress} links={LINKS} cta={{ href: "#contato", label: "Fale conosco" }} labels={{ mainNav: "Principal", home: "Dynamo, início" }} />
     </main>
   );
 }

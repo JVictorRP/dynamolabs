@@ -2,6 +2,13 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ContactForm } from "../src/components/ContactForm";
+import { LocaleProvider } from "../src/components/LocaleProvider";
+
+const inPt = (ui: React.ReactElement) => (
+  <LocaleProvider lang="pt" page="home" languages={["pt"]}>
+    {ui}
+  </LocaleProvider>
+);
 
 afterEach(cleanup);
 
@@ -15,7 +22,7 @@ const ok = (status = 201) => vi.fn(async () => new Response("{}", { status })) a
 describe("ContactForm", () => {
   it("sends the lead and confirms", async () => {
     const fetchImpl = ok();
-    render(<ContactForm endpoint="/api/lead" fetchImpl={fetchImpl} />);
+    render(inPt(<ContactForm endpoint="/api/lead" fetchImpl={fetchImpl} />));
     fill();
     send();
     expect(await screen.findByText(/recebemos sua mensagem/i)).toBeTruthy();
@@ -25,7 +32,7 @@ describe("ContactForm", () => {
   it("a double click sends ONE request (the button is disabled while sending)", async () => {
     let release!: () => void;
     const fetchImpl = vi.fn(() => new Promise<Response>((resolve) => (release = () => resolve(new Response("{}", { status: 201 }))))) as unknown as typeof fetch;
-    render(<ContactForm endpoint="/api/lead" fetchImpl={fetchImpl} />);
+    render(inPt(<ContactForm endpoint="/api/lead" fetchImpl={fetchImpl} />));
     fill();
     const button = screen.getByRole("button", { name: /enviar/i });
     fireEvent.click(button);
@@ -38,7 +45,7 @@ describe("ContactForm", () => {
 
   it("explains an invalid e-mail or empty name without sending anything", async () => {
     const fetchImpl = ok();
-    render(<ContactForm endpoint="/api/lead" fetchImpl={fetchImpl} />);
+    render(inPt(<ContactForm endpoint="/api/lead" fetchImpl={fetchImpl} />));
     fill("Maria", "isso-nao-e-email");
     send();
     expect(await screen.findByText(/confira o e-mail/i)).toBeTruthy();
@@ -49,7 +56,7 @@ describe("ContactForm", () => {
   });
 
   it("on failure shows a clear message and the WhatsApp alternative when configured", async () => {
-    render(<ContactForm endpoint="/api/lead" fetchImpl={ok(500)} whatsappUrl="https://wa.me/5500000000000" />);
+    render(inPt(<ContactForm endpoint="/api/lead" fetchImpl={ok(500)} whatsappUrl="https://wa.me/5500000000000" />));
     fill();
     send();
     expect(await screen.findByText(/não foi possível enviar/i)).toBeTruthy();
@@ -61,7 +68,7 @@ describe("ContactForm", () => {
   });
 
   it("omits the WhatsApp link when it is not configured, and asks to wait after too many attempts", async () => {
-    render(<ContactForm endpoint="/api/lead" fetchImpl={ok(429)} />);
+    render(inPt(<ContactForm endpoint="/api/lead" fetchImpl={ok(429)} />));
     fill();
     send();
     expect(await screen.findByText(/muitas tentativas/i)).toBeTruthy();
@@ -69,7 +76,7 @@ describe("ContactForm", () => {
   });
 
   it("has a honeypot field that people cannot reach: out of the tab order and hidden from assistive tech", () => {
-    const { container } = render(<ContactForm endpoint="/api/lead" fetchImpl={ok()} />);
+    const { container } = render(inPt(<ContactForm endpoint="/api/lead" fetchImpl={ok()} />));
     const trap = container.querySelector('input[name="website"]') as HTMLInputElement;
     expect(trap.tabIndex).toBe(-1);
     expect(trap.closest('[aria-hidden="true"]')).not.toBeNull();

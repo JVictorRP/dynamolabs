@@ -19,7 +19,7 @@ const VARIANT: Record<HeaderVariant, { height: number; bar: string; text: string
  * O logo troca entre os dois arquivos oficiais (claro/grafite), nunca por filtro CSS; os dois ficam
  * no DOM (sem espera de rede na troca) e só o ativo aparece.
  */
-export function Header({ progress, links, cta }: { progress: SiteProgress; links: NavLink[]; cta?: NavLink }) {
+export function Header({ progress, links, cta, labels }: { progress: SiteProgress; links: NavLink[]; cta?: NavLink; labels: { mainNav: string; home: string } }) {
   const state = headerState(progress);
   const logo = (kind: "claro" | "grafite") => (
     <img
@@ -50,11 +50,11 @@ export function Header({ progress, links, cta }: { progress: SiteProgress; links
         className="pointer-events-auto relative flex items-center justify-between px-6 transition-transform duration-500 ease-out md:px-10"
         style={{ height: FULL_HEIGHT, transform: `translateY(${-(FULL_HEIGHT - look.height) / 2}px)` }}
       >
-        <a href="#top" aria-label="Dynamo, início" className="relative block h-7 w-9 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-current">
+        <a href="#top" aria-label={labels.home} className="relative block h-7 w-9 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-current">
           {logo("claro")}
           {logo("grafite")}
         </a>
-        <nav aria-label="Principal" className="hidden items-center gap-10 md:flex">
+        <nav aria-label={labels.mainNav} className="hidden items-center gap-10 md:flex">
           {links.map((link) => (
             <a
               key={link.href}

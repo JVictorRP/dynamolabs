@@ -1,14 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { COPY } from "@/content/copy";
 import { SITE } from "@/content/site";
 import { submitLead } from "@/lib/contact/submit-lead";
+import { useCopy } from "./LocaleProvider";
 
 type Status = { kind: "idle" } | { kind: "sending" } | { kind: "sent" } | { kind: "error"; message: string; offerWhatsapp: boolean };
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const errors = COPY.contact.errors;
 
 const fieldClass = "w-full rounded-lg bg-graphite px-4 py-3 font-display text-base font-light text-white placeholder:text-gray-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal";
 const labelClass = "mb-2 block font-display text-[0.7rem] font-semibold tracking-[0.22em] text-gray-300 uppercase";
@@ -23,6 +22,8 @@ export function ContactForm({
   fetchImpl?: typeof fetch;
   whatsappUrl?: string;
 }) {
+  const copy = useCopy();
+  const errors = copy.contact.errors;
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   // Antes de o JavaScript hidratar (ou sem ele), o <form> sem `action` enviaria por GET, pondo nome, e-mail e telefone na
   // URL, no histórico e nos logs do servidor, sem nada chegar ao CRM. Por isso ele só aparece depois de hidratado.
@@ -58,7 +59,7 @@ export function ContactForm({
   if (status.kind === "sent") {
     return (
       <p role="status" className="m-0 font-display text-xl font-light text-mist">
-        {COPY.contact.sent}
+        {copy.contact.sent}
       </p>
     );
   }
@@ -74,7 +75,7 @@ export function ContactForm({
             {" "}
             ou fale pelo{" "}
             <a href={whatsappUrl} className="underline underline-offset-4">
-              {COPY.contact.whatsapp}
+              {copy.contact.whatsapp}
             </a>
           </>
         ) : null}
@@ -84,25 +85,25 @@ export function ContactForm({
     <form hidden={!hydrated} onSubmit={onSubmit} noValidate className="flex max-w-xl flex-col gap-5">
       <div>
         <label htmlFor="contact-name" className={labelClass}>
-          {COPY.contact.name}
+          {copy.contact.name}
         </label>
         <input id="contact-name" name="name" autoComplete="name" required maxLength={120} className={fieldClass} />
       </div>
       <div>
         <label htmlFor="contact-email" className={labelClass}>
-          {COPY.contact.email}
+          {copy.contact.email}
         </label>
         <input id="contact-email" name="email" type="email" autoComplete="email" required maxLength={254} className={fieldClass} />
       </div>
       <div>
         <label htmlFor="contact-phone" className={labelClass}>
-          {COPY.contact.phone}
+          {copy.contact.phone}
         </label>
         <input id="contact-phone" name="phone" type="tel" autoComplete="tel" maxLength={40} className={fieldClass} />
       </div>
       <div>
         <label htmlFor="contact-message" className={labelClass}>
-          {COPY.contact.message}
+          {copy.contact.message}
         </label>
         <textarea id="contact-message" name="message" rows={4} maxLength={2000} className={fieldClass} />
       </div>
@@ -118,7 +119,7 @@ export function ContactForm({
           disabled={busy}
           className="rounded-xl bg-teal px-8 py-4 font-label text-xs font-bold tracking-[0.2em] text-graphite uppercase disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
         >
-          {busy ? COPY.contact.sending : COPY.contact.submit}
+          {busy ? copy.contact.sending : copy.contact.submit}
         </button>
         <div aria-live="polite" className="min-h-6 font-display text-sm text-gray-300">
           {status.kind === "error" && (
@@ -129,7 +130,7 @@ export function ContactForm({
                   {" "}
                   {errors.alternative}{" "}
                   <a href={whatsappUrl} className="underline underline-offset-4">
-                    {COPY.contact.whatsapp}
+                    {copy.contact.whatsapp}
                   </a>
                   .
                 </>
