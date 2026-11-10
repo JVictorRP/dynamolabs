@@ -55,7 +55,7 @@ export function LanguageSwitcher({ languages }: { languages: readonly Lang[] }) 
         aria-expanded={open}
         aria-controls={listId}
         onClick={() => setOpen((v) => !v)}
-        className="flex h-11 w-[4.25rem] items-center justify-center gap-1.5 rounded-lg font-label text-[0.65rem] font-bold tracking-[0.2em] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
+        className="flex h-11 w-14 items-center justify-center md:w-[4.25rem] gap-1.5 rounded-lg font-label text-[0.65rem] font-bold tracking-[0.2em] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
       >
         {/* O nome acessível começa pelo texto visível ("PT") e acrescenta o rótulo só para leitor de tela (WCAG 2.5.3). */}
         <span>{lang.toUpperCase()}</span>
@@ -67,7 +67,7 @@ export function LanguageSwitcher({ languages }: { languages: readonly Lang[] }) 
       <ul
         id={listId}
         hidden={!open}
-        className="absolute top-full right-0 z-10 mt-2 m-0 min-w-40 list-none rounded-lg border border-graphite bg-void p-1.5 text-white shadow-lg"
+        className="absolute top-full left-0 z-10 mt-2 m-0 min-w-40 md:right-0 md:left-auto list-none rounded-lg border border-graphite bg-void p-1.5 text-white shadow-lg"
       >
         {languages.map((l) => (
           <li key={l}>

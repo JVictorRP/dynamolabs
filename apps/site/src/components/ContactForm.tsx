@@ -69,11 +69,11 @@ export function ContactForm({
     <>
     <noscript>
       <p className="m-0 max-w-xl font-display text-base font-light text-mist">
-        Para enviar a mensagem por aqui, ative o JavaScript do navegador
+        {copy.contact.noscript}
         {whatsappUrl ? (
           <>
             {" "}
-            ou fale pelo{" "}
+            {copy.contact.noscriptOr}{" "}
             <a href={whatsappUrl} className="underline underline-offset-4">
               {copy.contact.whatsapp}
             </a>

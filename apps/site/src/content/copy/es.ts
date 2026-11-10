@@ -18,7 +18,7 @@ export const es: Copy = {
       { href: "#chatbot", label: "Chatbot" },
       { href: "#contato", label: "Contacto" },
     ],
-    cta: { href: "#contato", label: "Habla con nosotros" },
+    cta: { href: "#contato", label: "Hablemos" },
   },
   hero: {
     eyebrow: "MARKETING CON IA Y AUTOMATIZACIÓN",
@@ -81,6 +81,8 @@ export const es: Copy = {
     sending: "Enviando…",
     sent: "Recibimos tu mensaje. Te respondemos pronto.",
     whatsapp: "WhatsApp",
+    noscript: "Para enviar el mensaje por aquí, activa JavaScript en tu navegador",
+    noscriptOr: "o escríbenos por",
     errors: {
       name: "Escribe tu nombre.",
       email: "Revisa el correo escrito.",

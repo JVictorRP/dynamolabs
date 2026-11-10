@@ -122,6 +122,42 @@ for (const lang of LANGS) {
       expect(header.overlap, "switcher and CTA must not overlap").toBe(false);
     });
 
+    for (const width of [390, 360, 320]) {
+      test(`at ${width}px the header stays on one line, uncrowded, and the open language list fits the screen`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 800 });
+        await open(page, lang);
+        const header = await page.evaluate(() => {
+          const h = document.querySelector("header")!;
+          const box = (el: Element) => el.getBoundingClientRect();
+          const logo = h.querySelector('a[href="#top"]')!;
+          const switcher = h.querySelector("[data-language-switcher] button")!;
+          const cta = h.querySelector("a.bg-teal")!;
+          return {
+            vw: window.innerWidth,
+            logoWidth: box(logo).width,
+            gapLogoSwitcher: box(switcher).left - box(logo).right,
+            ctaHeight: box(cta).height,
+            ctaRight: box(cta).right,
+            switcherRight: box(switcher).right,
+            ctaLeft: box(cta).left,
+          };
+        });
+        expect(header.logoWidth, "the logo keeps its width (36px)").toBeGreaterThanOrEqual(36);
+        expect(header.gapLogoSwitcher, "air between the logo and the language button").toBeGreaterThanOrEqual(8);
+        expect(header.ctaHeight, "the CTA is a single line").toBeLessThan(40);
+        expect(header.ctaRight, "the CTA ends inside the screen gutter").toBeLessThanOrEqual(header.vw - 16);
+        expect(header.ctaLeft - header.switcherRight, "air between the language button and the CTA").toBeGreaterThanOrEqual(4);
+
+        await page.locator("[data-language-switcher] button").click();
+        const list = await page.locator("[data-language-switcher] ul").evaluate((el) => {
+          const r = el.getBoundingClientRect();
+          return { left: r.left, right: r.right, vw: window.innerWidth };
+        });
+        expect(list.left, "the open list starts inside the screen").toBeGreaterThanOrEqual(0);
+        expect(list.right, "the open list ends inside the screen").toBeLessThanOrEqual(list.vw);
+      });
+    }
+
     test("no layout shift on load", async ({ page }) => {
       await page.addInitScript(() => {
         (window as unknown as { __cls: number }).__cls = 0;

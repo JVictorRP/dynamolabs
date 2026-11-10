@@ -50,7 +50,7 @@ export function Header({ progress, links, cta, labels, switcher }: { progress: S
         className="pointer-events-auto relative flex items-center justify-between px-6 transition-transform duration-500 ease-out md:px-10"
         style={{ height: FULL_HEIGHT, transform: `translateY(${-(FULL_HEIGHT - look.height) / 2}px)` }}
       >
-        <a href="#top" aria-label={labels.home} className="relative block h-7 w-9 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-current">
+        <a href="#top" aria-label={labels.home} className="relative block h-7 w-9 shrink-0 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-current">
           {logo("claro")}
           {logo("grafite")}
         </a>
@@ -70,7 +70,7 @@ export function Header({ progress, links, cta, labels, switcher }: { progress: S
           {cta ? (
             <a
               href={cta.href}
-              className="rounded-lg bg-teal px-4 py-2 font-label text-[0.65rem] font-bold tracking-[0.2em] text-graphite uppercase focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-current md:px-5"
+              className="rounded-lg bg-teal px-3 py-2 font-label text-[0.65rem] font-bold tracking-[0.14em] whitespace-nowrap text-graphite uppercase focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-current md:px-5 md:tracking-[0.2em]"
             >
               {cta.label}
             </a>

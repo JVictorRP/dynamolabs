@@ -78,6 +78,8 @@ export const pt: Copy = {
     sending: "Enviando…",
     sent: "Recebemos sua mensagem. Respondemos em breve.",
     whatsapp: "WhatsApp",
+    noscript: "Para enviar a mensagem por aqui, ative o JavaScript do navegador",
+    noscriptOr: "ou fale pelo",
     errors: {
       name: "Diga seu nome.",
       email: "Confira o e-mail digitado.",

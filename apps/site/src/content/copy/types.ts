@@ -34,6 +34,9 @@ export type Copy = {
     sending: string;
     sent: string;
     whatsapp: string;
+    /** Aviso do <noscript> (HTML do servidor): sem JavaScript o formulário não é oferecido. `noscriptOr` precede o link do WhatsApp. */
+    noscript: string;
+    noscriptOr: string;
     errors: { name: string; email: string; invalid: string; rate: string; network: string; alternative: string };
   };
 };
