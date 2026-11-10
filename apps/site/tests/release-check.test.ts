@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkRelease } from "../scripts/lib/check-release";
+import { checkRelease, unpublishedLanguages } from "../scripts/lib/check-release";
 
 const READY_ENV = {
   NEXT_PUBLIC_LEAD_ENDPOINT: "https://app.dynamo.business/api/public/lead",
@@ -32,5 +32,37 @@ describe("checkRelease (the launch is blocked until these are settled)", () => {
   it("also blocks provisional legal pages", () => {
     const problems = checkRelease(READY_ENV, "final", "provisional");
     expect(problems.join("\n")).toMatch(/privacidade|termos|legal/i);
+  });
+});
+
+describe("unpublishedLanguages (a warning, not an error: pt can always ship)", () => {
+  const ready = { pt: { copy: "final", legal: "final" }, en: { copy: "final", legal: "final" }, es: { copy: "final", legal: "final" } } as const;
+
+  it("is empty when every language is approved", () => {
+    expect(unpublishedLanguages(ready)).toEqual([]);
+  });
+
+  it("names the language and why: provisional copy", () => {
+    const result = unpublishedLanguages({ ...ready, en: { copy: "provisional", legal: "final" } });
+    expect(result).toHaveLength(1);
+    expect(result[0].lang).toBe("en");
+    expect(result[0].reason).toMatch(/copy/i);
+  });
+
+  it("names the language and why: provisional legal texts", () => {
+    const result = unpublishedLanguages({ ...ready, es: { copy: "final", legal: "provisional" } });
+    expect(result[0].lang).toBe("es");
+    expect(result[0].reason).toMatch(/legais/i);
+  });
+
+  it("names both reasons when copy and legal are provisional", () => {
+    const result = unpublishedLanguages({ ...ready, es: { copy: "provisional", legal: "provisional" } });
+    expect(result[0].reason).toMatch(/copy/i);
+    expect(result[0].reason).toMatch(/legais/i);
+  });
+
+  it("never lists Portuguese, the default language", () => {
+    const result = unpublishedLanguages({ ...ready, pt: { copy: "provisional", legal: "provisional" } });
+    expect(result.map((r) => r.lang)).not.toContain("pt");
   });
 });

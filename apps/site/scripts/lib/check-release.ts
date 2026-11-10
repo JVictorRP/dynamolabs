@@ -16,3 +16,18 @@ export function checkRelease(env: Record<string, string | undefined>, copyStatus
   if (!value("NEXT_PUBLIC_WHATSAPP_URL")) problems.push("Defina NEXT_PUBLIC_WHATSAPP_URL (link do WhatsApp da Dynamo, a alternativa do formulário).");
   return problems;
 }
+
+type LangStatus = { copy: string; legal: string };
+
+/**
+ * Idiomas que ficam fora do ar neste build (copy ou textos legais ainda "provisional"). Só avisa: o português, o idioma
+ * padrão, publica sempre, então isto nunca bloqueia o lançamento.
+ */
+export function unpublishedLanguages(statuses: Record<"pt" | "en" | "es", LangStatus>): { lang: "en" | "es"; reason: string }[] {
+  const result: { lang: "en" | "es"; reason: string }[] = [];
+  for (const lang of ["en", "es"] as const) {
+    const reasons = [statuses[lang].copy !== "final" && "copy provisória", statuses[lang].legal !== "final" && "textos legais provisórios"].filter(Boolean);
+    if (reasons.length > 0) result.push({ lang, reason: reasons.join(" e ") });
+  }
+  return result;
+}
