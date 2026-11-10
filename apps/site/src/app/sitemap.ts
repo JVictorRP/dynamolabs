@@ -1,9 +1,9 @@
 import type { MetadataRoute } from "next";
+import { activeLangs } from "@/content/status";
+import { sitemapEntries } from "@/lib/i18n/seo";
 
 export const dynamic = "force-static";
 
-const BASE = "https://dynamo.business";
-
 export default function sitemap(): MetadataRoute.Sitemap {
-  return ["", "/privacidade", "/termos"].map((path) => ({ url: `${BASE}${path}`, changeFrequency: "monthly", priority: path === "" ? 1 : 0.3 }));
+  return sitemapEntries(activeLangs());
 }

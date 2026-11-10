@@ -36,3 +36,18 @@ export function showAllLanguages(
 ): boolean {
   return env.NEXT_PUBLIC_E2E === "1" || env.NODE_ENV === "development";
 }
+
+/** Último trecho do caminho das páginas legais de um idioma (`/en/privacy` → "privacy"); só faz sentido fora do idioma padrão. */
+export function legalSlugs(lang: Lang): { slug: string; page: "privacy" | "terms" }[] {
+  return (["privacy", "terms"] as const).map((page) => ({ slug: PATHS[lang][page].split("/").pop() as string, page }));
+}
+
+/** Página legal que corresponde a um trecho de caminho no idioma, ou null se ele não pertence ao idioma. */
+export function pageFromSlug(lang: Lang, slug: string): "privacy" | "terms" | null {
+  return legalSlugs(lang).find((entry) => entry.slug === slug)?.page ?? null;
+}
+
+/** Há algum idioma além do padrão no ar? Sem isso as rotas `[lang]` não podem existir (export estático exige ao menos uma). */
+export function hasExtraLanguages(statuses: Record<Lang, { copy: Status; legal: Status }>, showAll: boolean): boolean {
+  return publishedLangs(statuses, showAll).some((lang) => lang !== DEFAULT_LANG);
+}

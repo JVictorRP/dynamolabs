@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_LANG, HTML_LANG, LANGS, OG_LOCALE, isLang, pathFor, publishedLangs, showAllLanguages, type Lang, type Status } from "../src/lib/i18n/config";
+import { DEFAULT_LANG, HTML_LANG, LANGS, OG_LOCALE, hasExtraLanguages, isLang, legalSlugs, pageFromSlug, pathFor, publishedLangs, showAllLanguages, type Lang, type Status } from "../src/lib/i18n/config";
 
 const statuses = (over: Partial<Record<Lang, { copy: Status; legal: Status }>> = {}): Record<Lang, { copy: Status; legal: Status }> => ({
   pt: { copy: "final", legal: "final" },
@@ -57,5 +57,28 @@ describe("showAllLanguages", () => {
   });
   it("is on in development", () => {
     expect(showAllLanguages({ NODE_ENV: "development" })).toBe(true);
+  });
+});
+
+describe("legal slugs", () => {
+  it("lists the legal slugs of the non-default languages", () => {
+    expect(legalSlugs("en")).toEqual([{ slug: "privacy", page: "privacy" }, { slug: "terms", page: "terms" }]);
+    expect(legalSlugs("es")).toEqual([{ slug: "privacidad", page: "privacy" }, { slug: "terminos", page: "terms" }]);
+  });
+  it("resolves a slug back to its page, or null when it does not belong to the language", () => {
+    expect(pageFromSlug("es", "terminos")).toBe("terms");
+    expect(pageFromSlug("en", "privacy")).toBe("privacy");
+    expect(pageFromSlug("en", "privacidad")).toBeNull();
+    expect(pageFromSlug("es", "x")).toBeNull();
+  });
+});
+
+describe("hasExtraLanguages", () => {
+  it("is false when only Portuguese is published (the /en and /es routes must not exist)", () => {
+    expect(hasExtraLanguages(statuses({ en: { copy: "provisional", legal: "provisional" }, es: { copy: "provisional", legal: "final" } }), false)).toBe(false);
+  });
+  it("is true when at least one extra language is approved, or when showing all", () => {
+    expect(hasExtraLanguages(statuses({ en: { copy: "provisional", legal: "provisional" } }), false)).toBe(true);
+    expect(hasExtraLanguages(statuses({ en: { copy: "provisional", legal: "provisional" }, es: { copy: "provisional", legal: "provisional" } }), true)).toBe(true);
   });
 });

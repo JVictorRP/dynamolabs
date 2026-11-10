@@ -1,8 +1,7 @@
-import type { Metadata } from "next";
 import { Archivo, Mrs_Saint_Delafield, Syncopate } from "next/font/google";
 import localFont from "next/font/local";
-import { SITE } from "@/content/site";
 import { HTML_LANG, type Lang } from "@/lib/i18n/config";
+import { organizationJsonLd } from "@/lib/i18n/seo";
 import "../styles/globals.css";
 
 // Fontes do design system Dynamo Labs. Archivo, Syncopate e Mrs Saint Delafield são as
@@ -12,41 +11,12 @@ const syncopate = Syncopate({ subsets: ["latin"], weight: ["400", "700"], variab
 const saint = Mrs_Saint_Delafield({ subsets: ["latin"], weight: "400", variable: "--font-saint", display: "swap" });
 const oxanium = localFont({ src: "../fonts/Oxanium-Light.ttf", weight: "300", variable: "--font-oxanium", display: "swap" });
 
-const DESCRIPTION = "Agência de marketing digital com IA e automação: tráfego pago, criativo, site e sistemas, com a qualidade e o dinamismo da inteligência artificial.";
-
-/** Metadados da home em português. Na Task 6 isto passa a vir por idioma (src/lib/i18n/seo.ts). */
-export const baseMetadata: Metadata = {
-  metadataBase: new URL("https://dynamo.business"),
-  title: { default: "Dynamo | Marketing digital com IA e automação", template: "%s" },
-  description: DESCRIPTION,
-  openGraph: {
-    type: "website",
-    siteName: "Dynamo",
-    locale: "pt_BR",
-    url: "https://dynamo.business",
-    title: "Dynamo | Marketing digital com IA e automação",
-    description: DESCRIPTION,
-    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Dynamo" }],
-  },
-  twitter: { card: "summary_large_image", title: "Dynamo | Marketing digital com IA e automação", description: DESCRIPTION, images: ["/og.png"] },
-};
-
-const organization = {
-  "@context": "https://schema.org",
-  "@type": "Organization",
-  name: "Dynamo",
-  url: "https://dynamo.business",
-  logo: "https://dynamo.business/brand/dynamo-lockup-grafite.png",
-  description: DESCRIPTION,
-  ...(SITE.instagram || SITE.linkedin ? { sameAs: [SITE.instagram, SITE.linkedin].filter(Boolean) } : {}),
-};
-
-/** Casca do documento (`<html>`, fontes, JSON-LD), compartilhada pelos layouts raiz de cada idioma. */
+/** Casca do documento (`<html lang>`, fontes, JSON-LD no idioma da página), compartilhada pelos layouts raiz de cada idioma. */
 export function RootShell({ lang, children }: Readonly<{ lang: Lang; children: React.ReactNode }>) {
   return (
     <html lang={HTML_LANG[lang]} className={`${archivo.variable} ${syncopate.variable} ${saint.variable} ${oxanium.variable}`}>
       <body className="min-h-dvh antialiased">
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organization) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd(lang)) }} />
         {children}
       </body>
     </html>

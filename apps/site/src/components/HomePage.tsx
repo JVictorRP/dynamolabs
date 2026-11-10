@@ -1,6 +1,6 @@
 import { getCopy } from "@/content/copy/index";
-import { statusByLang } from "@/content/status";
-import { publishedLangs, showAllLanguages, type Lang } from "@/lib/i18n/config";
+import { activeLangs } from "@/content/status";
+import type { Lang } from "@/lib/i18n/config";
 import { ChatSection } from "./ChatSection";
 import { Footer } from "./Footer";
 import { HeroStage } from "./HeroStage";
@@ -13,7 +13,7 @@ import { Video2Stage } from "./Video2Stage";
 /** Página inicial de um idioma. Servidor: calcula os idiomas no ar e entrega a todos os componentes de cliente. */
 export function HomePage({ lang }: { lang: Lang }) {
   const copy = getCopy(lang);
-  const languages = publishedLangs(statusByLang(), showAllLanguages());
+  const languages = activeLangs();
   return (
     <LocaleProvider lang={lang} page="home" languages={languages}>
       <a

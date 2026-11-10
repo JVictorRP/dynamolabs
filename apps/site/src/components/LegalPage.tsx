@@ -1,6 +1,6 @@
 import { getLegal } from "@/content/legal/index";
-import { statusByLang } from "@/content/status";
-import { pathFor, publishedLangs, showAllLanguages, type Lang } from "@/lib/i18n/config";
+import { activeLangs } from "@/content/status";
+import { pathFor, type Lang } from "@/lib/i18n/config";
 import { LocaleProvider } from "./LocaleProvider";
 import { SiteHeader } from "./SiteHeader";
 
@@ -8,7 +8,7 @@ import { SiteHeader } from "./SiteHeader";
 export function LegalPage({ lang, page }: { lang: Lang; page: "privacy" | "terms" }) {
   const legal = getLegal(lang);
   const text = legal[page];
-  const languages = publishedLangs(statusByLang(), showAllLanguages());
+  const languages = activeLangs();
   return (
     <LocaleProvider lang={lang} page={page} languages={languages}>
       <SiteHeader />

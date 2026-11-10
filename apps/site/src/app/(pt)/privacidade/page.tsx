@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { LegalPage } from "@/components/LegalPage";
-import { getLegal } from "@/content/legal/index";
+import { activeLangs } from "@/content/status";
+import { legalMetadata } from "@/lib/i18n/seo";
 
-export const metadata: Metadata = { title: getLegal("pt").privacy.metaTitle };
+export const generateMetadata = (): Metadata => legalMetadata("pt", "privacy", activeLangs());
 
 export default function PrivacyPage() {
   return <LegalPage lang="pt" page="privacy" />;
