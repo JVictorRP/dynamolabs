@@ -19,7 +19,7 @@ const VARIANT: Record<HeaderVariant, { height: number; bar: string; text: string
  * O logo troca entre os dois arquivos oficiais (claro/grafite), nunca por filtro CSS; os dois ficam
  * no DOM (sem espera de rede na troca) e só o ativo aparece.
  */
-export function Header({ progress, links, cta, labels }: { progress: SiteProgress; links: NavLink[]; cta?: NavLink; labels: { mainNav: string; home: string } }) {
+export function Header({ progress, links, cta, labels, switcher }: { progress: SiteProgress; links: NavLink[]; cta?: NavLink; labels: { mainNav: string; home: string }; switcher?: React.ReactNode }) {
   const state = headerState(progress);
   const logo = (kind: "claro" | "grafite") => (
     <img
@@ -65,14 +65,17 @@ export function Header({ progress, links, cta, labels }: { progress: SiteProgres
             </a>
           ))}
         </nav>
-        {cta ? (
-          <a
-            href={cta.href}
-            className="rounded-lg bg-teal px-5 py-2 font-label text-[0.65rem] font-bold tracking-[0.2em] text-graphite uppercase focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-current"
-          >
-            {cta.label}
-          </a>
-        ) : null}
+        <div className="flex items-center gap-2 md:gap-4">
+          {switcher}
+          {cta ? (
+            <a
+              href={cta.href}
+              className="rounded-lg bg-teal px-4 py-2 font-label text-[0.65rem] font-bold tracking-[0.2em] text-graphite uppercase focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-current md:px-5"
+            >
+              {cta.label}
+            </a>
+          ) : null}
+        </div>
       </div>
       {/* Indicador de progresso do vídeo, colado na borda de baixo da altura visual. */}
       <div
