@@ -27,9 +27,7 @@ for (const lang of LANGS) {
       expect((await page.locator("h1").first().textContent())?.replace(/\s+/g, " ").trim()).toBe(copy.hero.title.replace(/\n/g, " "));
       await expect(page).toHaveTitle(copy.meta.title);
       await expect(page.locator('a[href="#top"]').first()).toHaveText(copy.skip);
-      await expect(page.locator("footer h2")).toHaveText(copy.footer.phrase.replace(/\n/g, ""), { useInnerText: false }).catch(async () => {
-        expect((await page.locator("footer h2").textContent())?.replace(/\s+/g, "")).toBe(copy.footer.phrase.replace(/\s+/g, ""));
-      });
+      expect((await page.locator("footer h2").textContent())?.replace(/\s+/g, "")).toBe(copy.footer.phrase.replace(/\s+/g, ""));
       expect(errors, "console errors").toEqual([]);
       expect(bad, "failed responses").toEqual([]);
     });
@@ -44,7 +42,8 @@ for (const lang of LANGS) {
 
     test("the in-page anchors #chatbot and #contato lead to their sections", async ({ page }) => {
       await open(page, lang);
-      await page.locator(`header a[href="#contato"]`).first().click();
+      // O botão de contato (o link de texto do menu fica escondido no celular).
+      await page.locator("header a.bg-teal").click();
       await expect(page.locator("footer#contato")).toBeInViewport();
       await page.goto(`${pathFor(lang, "home")}#chatbot`);
       await page.waitForFunction(() => window.__dynamo?.progress["chat"] !== undefined);
@@ -55,7 +54,7 @@ for (const lang of LANGS) {
     test("the head declares canonical, hreflang for every language and the Open Graph locale", async ({ page }) => {
       await page.goto(pathFor(lang, "home"));
       const canonical = await page.locator('link[rel="canonical"]').getAttribute("href");
-      expect(canonical).toBe(`https://dynamo.business${pathFor(lang, "home") === "/" ? "/" : pathFor(lang, "home")}`);
+      expect(canonical).toBe(`https://dynamo.business${pathFor(lang, "home") === "/" ? "" : pathFor(lang, "home")}`);
       const alternates = await page.locator('link[rel="alternate"][hreflang]').evaluateAll((els) => els.map((e) => [e.getAttribute("hreflang"), e.getAttribute("href")]));
       expect(alternates.map((a) => a[0]).sort()).toEqual(["en", "es", "pt-BR", "x-default"]);
       expect(await page.locator('meta[property="og:locale"]').getAttribute("content")).toBe({ pt: "pt_BR", en: "en_US", es: "es_ES" }[lang]);
@@ -97,11 +96,25 @@ for (const lang of LANGS) {
       await page.setViewportSize({ width: 390, height: 844 });
       await open(page, lang);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+      // Cada título (hero, seção 2 e seção 4) cabe na largura da tela: a caixa do texto HTML é a mesma que o 3D ocupa.
+      for (const stage of [["hero-s2", 0.05], ["hero-s2", 0.7], ["video2", 0.5]] as const) {
+        await page.evaluate(([s, target]) => {
+          const wrapper = document.querySelector<HTMLElement>(`[data-stage="${s}"]`)!;
+          const sticky = wrapper.querySelector<HTMLElement>("[data-sticky]")!;
+          window.scrollTo(0, wrapper.getBoundingClientRect().top + window.scrollY + (target as number) * (wrapper.offsetHeight - sticky.offsetHeight));
+        }, stage);
+        await page.waitForTimeout(500);
+      }
+      const titles = await page.evaluate(() =>
+        [...document.querySelectorAll<HTMLElement>("[data-title]")].map((el) => ({ name: el.dataset.title, width: el.getBoundingClientRect().width, vw: window.innerWidth })),
+      );
+      expect(titles.length).toBeGreaterThanOrEqual(3);
+      for (const t of titles) expect(t.width, `title ${t.name} is ${t.width}px wide on a ${t.vw}px screen`).toBeLessThanOrEqual(t.vw);
       const header = await page.evaluate(() => {
         const h = document.querySelector("header")!;
         const box = (el: Element) => el.getBoundingClientRect();
         const switcher = h.querySelector("[data-language-switcher] button")!;
-        const cta = h.querySelector('a[href="#contato"]')!;
+        const cta = h.querySelector("a.bg-teal")!;
         return { switcherVisible: box(switcher).width > 0, ctaRight: box(cta).right, vw: window.innerWidth, overlap: box(switcher).right > box(cta).left + 1 };
       });
       expect(header.switcherVisible).toBe(true);
