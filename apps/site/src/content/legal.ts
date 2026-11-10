@@ -1,7 +1,6 @@
-/**
- * Estado dos textos legais (política de privacidade e termos de uso). Aprovados pelo João Victor ("final"); com
- * "provisional" a página mostra o aviso de texto provisório e `check:release` bloqueia a publicação.
- */
-export const LEGAL = {
-  status: "final" as "provisional" | "final",
-};
+/** Atalho do português (padrão) para scripts e testes: `LEGAL.status` do pt. As páginas leem o idioma da rota. */
+import { getLegal } from "./legal/index";
+
+export { getLegal, LEGAL_BY_LANG } from "./legal/index";
+export type { Legal } from "./legal/index";
+export const LEGAL = getLegal("pt");
