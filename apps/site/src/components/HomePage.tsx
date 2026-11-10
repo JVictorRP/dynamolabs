@@ -1,12 +1,12 @@
-import { ChatSection } from "@/components/ChatSection";
-import { Footer } from "@/components/Footer";
-import { HeroStage } from "@/components/HeroStage";
-import { SiteHeader } from "@/components/SiteHeader";
-import { StageAnchors } from "@/components/StageAnchors";
-import { ChatStatic, HeroStatic, Section2Static, Video2Static } from "@/components/StaticSections";
-import { Video2Stage } from "@/components/Video2Stage";
+import { ChatSection } from "./ChatSection";
+import { Footer } from "./Footer";
+import { HeroStage } from "./HeroStage";
+import { SiteHeader } from "./SiteHeader";
+import { StageAnchors } from "./StageAnchors";
+import { ChatStatic, HeroStatic, Section2Static, Video2Static } from "./StaticSections";
+import { Video2Stage } from "./Video2Stage";
 
-export default function Home() {
+export function HomePage() {
   return (
     <>
       <a

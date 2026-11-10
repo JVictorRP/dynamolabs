@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Archivo, Mrs_Saint_Delafield, Syncopate } from "next/font/google";
 import localFont from "next/font/local";
 import { SITE } from "@/content/site";
+import { HTML_LANG, type Lang } from "@/lib/i18n/config";
 import "../styles/globals.css";
 
 // Fontes do design system Dynamo Labs. Archivo, Syncopate e Mrs Saint Delafield são as
@@ -13,7 +14,8 @@ const oxanium = localFont({ src: "../fonts/Oxanium-Light.ttf", weight: "300", va
 
 const DESCRIPTION = "Agência de marketing digital com IA e automação: tráfego pago, criativo, site e sistemas, com a qualidade e o dinamismo da inteligência artificial.";
 
-export const metadata: Metadata = {
+/** Metadados da home em português. Na Task 6 isto passa a vir por idioma (src/lib/i18n/seo.ts). */
+export const baseMetadata: Metadata = {
   metadataBase: new URL("https://dynamo.business"),
   title: { default: "Dynamo | Marketing digital com IA e automação", template: "%s" },
   description: DESCRIPTION,
@@ -39,9 +41,10 @@ const organization = {
   ...(SITE.instagram || SITE.linkedin ? { sameAs: [SITE.instagram, SITE.linkedin].filter(Boolean) } : {}),
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+/** Casca do documento (`<html>`, fontes, JSON-LD), compartilhada pelos layouts raiz de cada idioma. */
+export function RootShell({ lang, children }: Readonly<{ lang: Lang; children: React.ReactNode }>) {
   return (
-    <html lang="pt-BR" className={`${archivo.variable} ${syncopate.variable} ${saint.variable} ${oxanium.variable}`}>
+    <html lang={HTML_LANG[lang]} className={`${archivo.variable} ${syncopate.variable} ${saint.variable} ${oxanium.variable}`}>
       <body className="min-h-dvh antialiased">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organization) }} />
         {children}
