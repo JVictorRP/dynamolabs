@@ -16,13 +16,11 @@ import { pickTier } from "@/lib/frames/tier";
 import { useReducedMotion } from "@/lib/use-reduced-motion";
 import { STAGE_OVERLAP_VH } from "@/lib/choreo/overlap";
 import { StageShell } from "./StageShell";
-import { useCopy } from "./LocaleProvider";
+import { useCopy, useLang } from "./LocaleProvider";
 import { Video2Static } from "./StaticSections";
 
 const FONT_URL = "/fonts/ArchivoBlack-Regular.ttf";
 const GAP = 18;
-/** Tamanho medido do título (igual ao do 3D: ver title-sizes.ts), para o texto nascer já no lugar certo. */
-const DEFAULT_SIZE: { width: number; height: number } = { ...TITLE_SIZE_EM.video2 };
 
 // Opacidades em função do progresso (--p-video2), em CSS puro.
 const P = "var(--p-video2, 0)";
@@ -45,13 +43,14 @@ export function Video2Stage() {
 
 function AnimatedVideo2Stage() {
   const copy = useCopy();
+  const titleSize = TITLE_SIZE_EM[useLang()].video2; // medido como o 3D mede (ver title-sizes.ts): o texto nasce já no lugar certo
   const rootRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stageRef = useRef<StageHandle | null>(null);
   const titleRef = useRef<Title3D | null>(null);
   const progressRef = useRef(0);
   const hiddenRef = useRef(false);
-  const [size, setSize] = useState(DEFAULT_SIZE);
+  const [size, setSize] = useState<{ width: number; height: number }>(() => ({ ...titleSize }));
   // O palco só é criado (e só baixa frames) quando a seção está a uma tela de distância: não há por que gastar banda e
   // ~160 MB de bitmaps decodificados com um vídeo que ninguém vai ver já na abertura.
   const [started, setStarted] = useState(false);

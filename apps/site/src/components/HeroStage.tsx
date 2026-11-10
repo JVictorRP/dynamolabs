@@ -15,7 +15,7 @@ import { pickTier } from "@/lib/frames/tier";
 import { useReducedMotion } from "@/lib/use-reduced-motion";
 import heroManifest from "../../public/frames/v1/manifest.json";
 import { DecoText } from "./DecoText";
-import { useCopy } from "./LocaleProvider";
+import { useCopy, useLang } from "./LocaleProvider";
 import { HeroStatic, Section2Static } from "./StaticSections";
 import { StageShell } from "./StageShell";
 
@@ -34,8 +34,6 @@ const S2_RISE_3D = `perspective(900px) rotateX(calc((1 - clamp(0, calc((${P} - 0
 const BREATHER = `clamp(0, calc((${P} - 0.92) / 0.08), 1)`;
 
 type Sizes = { hero: { width: number; height: number }; s2: { width: number; height: number } };
-/** Tamanhos medidos dos títulos (iguais aos do 3D: ver title-sizes.ts), para o texto nascer já no lugar certo. */
-const DEFAULT_SIZES: Sizes = { hero: { ...TITLE_SIZE_EM.hero }, s2: { ...TITLE_SIZE_EM.s2 } };
 const POSTER_VERSION = (heroManifest as { version?: string }).version ?? "";
 type Layouts = { vp: Viewport; hero: BlockLayout; s2: BlockLayout };
 
@@ -57,13 +55,14 @@ export function HeroStage() {
 
 function AnimatedHeroStage() {
   const copy = useCopy();
+  const titleSizes = TITLE_SIZE_EM[useLang()]; // medidos como o 3D mede (ver title-sizes.ts): o texto nasce já no lugar certo
   const rootRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stageRef = useRef<StageHandle | null>(null);
   const titlesRef = useRef<{ hero: Title3D; s2: Title3D } | null>(null);
   const progressRef = useRef(0);
   const hiddenRef = useRef(false);
-  const [sizes, setSizes] = useState<Sizes>(DEFAULT_SIZES);
+  const [sizes, setSizes] = useState<Sizes>(() => ({ hero: { ...titleSizes.hero }, s2: { ...titleSizes.s2 } }));
   const [vp, setVp] = useState<Viewport | null>(null);
   const [renderer, setRenderer] = useState<StageHandle["renderer"] | null>(null);
   // Enquanto o título 3D não está pronto (ou se ele falhar), o título HTML aparece achatado: o texto nunca depende do 3D.
@@ -204,7 +203,7 @@ function AnimatedHeroStage() {
         ref={rootRef}
         data-renderer={renderer ?? "loading"}
         className="hero-vars relative h-full w-full bg-void"
-        style={hero ? ({ "--hero-fs": `${hero.fontPx}px`, "--hero-left": `${hero.left}px`, "--hero-bottom": `${hero.bottom}px` } as CSSProperties) : undefined}
+        style={({ "--hero-width-em": titleSizes.hero.width, ...(hero ? { "--hero-fs": `${hero.fontPx}px`, "--hero-left": `${hero.left}px`, "--hero-bottom": `${hero.bottom}px` } : {}) }) as CSSProperties}
       >
         {/* Primeiro frame no HTML: aparece com a página e fica SEMPRE atrás do canvas, que o cobre quando desenha. Nunca o
             escondemos antes disso: esconder deixaria a tela preta enquanto o canvas ainda carrega. */}
@@ -245,7 +244,7 @@ function AnimatedHeroStage() {
         <div
           data-copy="hero"
           className="absolute flex flex-col gap-[10px]"
-          style={style({ left: "var(--hero-left)", bottom: `calc(var(--hero-bottom) + ${TITLE_SIZE_EM.hero.height} * var(--hero-fs) + ${GAP}px)`, opacity: HERO_OPACITY })}
+          style={style({ left: "var(--hero-left)", bottom: `calc(var(--hero-bottom) + ${titleSizes.hero.height} * var(--hero-fs) + ${GAP}px)`, opacity: HERO_OPACITY })}
         >
           <p className="eyebrow m-0 font-display font-bold text-amber uppercase">
             {copy.hero.eyebrow}

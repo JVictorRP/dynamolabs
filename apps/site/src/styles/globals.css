@@ -71,16 +71,18 @@ html.lenis body {
 
 /* Bloco do hero: posição e tamanho vêm de variáveis CSS que reproduzem `heroLayout` (src/lib/stage/layout.ts), para o texto
    ser renderizado no HTML do servidor e aparecer no primeiro paint. Quando o JS mede o palco, ele grava os mesmos valores
-   inline no elemento (--hero-*), então nada se move. A largura do título é 8,92 em (src/content/title-sizes.ts). */
+   inline no elemento (--hero-*), então nada se move. A largura do título em em (--hero-width-em) vem de src/content/title-sizes.ts e é gravada inline a partir do idioma da
+   página; 8,92 é a do português. */
 .hero-vars {
   --hero-margin: clamp(20px, 5vw, 72px);
   --hero-left: var(--hero-margin);
   --hero-bottom: clamp(48px, 12svh, 120px);
-  --hero-fs: clamp(20px, min(8.3vw, 12.2svh, calc(45vw / 8.92)), 92px);
+  --hero-width-em: 8.92;
+  --hero-fs: clamp(20px, min(8.3vw, 12.2svh, calc(45vw / var(--hero-width-em))), 92px);
 }
 @media (max-aspect-ratio: 9/10) {
   .hero-vars {
-    --hero-fs: clamp(20px, min(8.3vw, 12.2svh, calc(0.72 * (100vw - 2 * var(--hero-margin)) / 8.92)), 92px);
+    --hero-fs: clamp(20px, min(8.3vw, 12.2svh, calc(0.72 * (100vw - 2 * var(--hero-margin)) / var(--hero-width-em))), 92px);
   }
 }
 
