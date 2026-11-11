@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
 import { schema, type Db } from "@dynamo/db";
 import { createTestDb, seedOrg } from "@dynamo/db/testing";
-import { anonymize } from "../src/style/anonymize";
+import { anonymize, discoverNames } from "../src/style/anonymize";
 import { extractExamples } from "../src/style/examples";
 import { importStyleExport } from "../src/style/import";
 import { listAuthors, parseExport, type ChatLine } from "../src/style/parse-export";
@@ -112,5 +112,48 @@ describe("importStyleExport", () => {
   it("refuses an agent name that is not in the file", async () => {
     const org = await seedOrg(db, "C");
     await expect(importStyleExport(db, org, { fileName: "a.txt", bytes: bytes("android.txt") }, "Fulano")).rejects.toThrow(/atendente/);
+  });
+});
+
+describe("anonymization of unsaved contacts (review important 3)", () => {
+  const line = (author: string, text: string): ChatLine => ({ author, text, at: new Date() });
+
+  it("finds names from self-introductions and greetings", () => {
+    const lines = [
+      line("+55 27 98888-7777", "Oi, sou a Maria Souza, queria um orçamento"),
+      line("Atendente", "Boa tarde, Maria! Claro."),
+      line("+55 27 91111-2222", "meu nome é joão"),
+      line("Atendente", "Obrigado, Carlos! Até logo."),
+      line("+55 27 93333-4444", "Aqui é o Pedro da padaria"),
+    ];
+    expect(discoverNames(lines).sort()).toEqual(["Carlos", "Maria Souza", "Pedro", "joão"].sort());
+  });
+
+  it("does not take common words after greetings as names", () => {
+    expect(discoverNames([line("A", "Bom dia, Tudo bem?"), line("A", "Obrigado, Sim claro"), line("A", "Oi, Pessoal!")])).toEqual([]);
+  });
+
+  it("masks street addresses with numbers", () => {
+    expect(anonymize("Entrego na Rua das Flores, 123, ap 4", [])).toBe("Entrego na [ENDERECO], ap 4");
+    expect(anonymize("fica na Av. Vitória 1500", [])).toBe("fica na [ENDERECO]");
+    expect(anonymize("Avenida Nossa Senhora da Penha, nº 570", [])).toBe("[ENDERECO]");
+  });
+
+  it("import removes the customer's name when the author is a phone number", async () => {
+    const { db, close } = await createTestDb();
+    const org = await seedOrg(db, "SemContato");
+    const txt = [
+      "10/11/2026 14:31 - +55 27 98888-7777: Oi, sou a Maria Souza, queria um orçamento",
+      "10/11/2026 14:32 - Atendente: Boa tarde, Maria! Me passa o endereço?",
+      "10/11/2026 14:33 - +55 27 98888-7777: Rua das Flores, 123",
+      "10/11/2026 14:34 - Atendente: Perfeito, Maria. Entregamos aí!",
+    ].join("\n");
+    await importStyleExport(db, org, { fileName: "c.txt", bytes: new TextEncoder().encode(txt) }, "Atendente");
+    const rows = await db.select().from(schema.styleExample).where(eq(schema.styleExample.organizationId, org));
+    const all = rows.map((r) => r.customerText + " " + r.agentText).join(" ");
+    expect(all).not.toMatch(/Maria|Souza|Flores|123|98888/);
+    expect(all).toContain("[CLIENTE]");
+    expect(all).toContain("[ENDERECO]");
+    await close();
   });
 });
