@@ -5,6 +5,7 @@
 import { createHash, randomBytes, randomInt } from "node:crypto";
 import { and, eq, sql } from "drizzle-orm";
 import { ensureStages, schema, type Db } from "@dynamo/db";
+import { countPendingActions } from "./content/decisions";
 
 /** O que usamos do contexto do Better Auth (contrato mínimo, para testes com banco em memória). */
 export type AuthInternals = {
@@ -122,7 +123,7 @@ export async function resetPasswordByEmail(deps: AccountDeps, email: string): Pr
   return { login, senha };
 }
 
-export type ClientRow = { id: string; name: string; slug: string; createdAt: Date; members: number; leadsThisMonth: number; whatsappStatus: string | null };
+export type ClientRow = { id: string; name: string; slug: string; createdAt: Date; members: number; leadsThisMonth: number; whatsappStatus: string | null; pendingActions: number };
 
 export async function listClients(db: Db, now: Date): Promise<ClientRow[]> {
   const local = new Date(now.getTime() - 3 * 3600_000);
@@ -140,7 +141,8 @@ export async function listClients(db: Db, now: Date): Promise<ClientRow[]> {
     })
     .from(schema.organization)
     .orderBy(schema.organization.name);
-  return rows.map((r) => ({ ...r, members: Number(r.members), leadsThisMonth: Number(r.leadsThisMonth) }));
+  const pending = await countPendingActions(db);
+  return rows.map((r) => ({ ...r, members: Number(r.members), leadsThisMonth: Number(r.leadsThisMonth), pendingActions: pending[r.id] ?? 0 }));
 }
 
 export async function getClient(db: Db, organizationId: string) {

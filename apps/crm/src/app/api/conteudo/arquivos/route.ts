@@ -27,6 +27,7 @@ export async function POST(request: Request) {
     return Response.json(media, { status: 201 });
   } catch (e) {
     if (e instanceof FileError) {
+      console.warn(`Envio recusado (${e.code}): ${e.message}`);
       const status = e.code === "tamanho" ? 413 : e.code === "tipo" ? 415 : 400;
       return Response.json({ error: e.message }, { status });
     }

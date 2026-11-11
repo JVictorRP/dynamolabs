@@ -5,6 +5,7 @@ import { createTestDb, seedOrg } from "@dynamo/db/testing";
 import { decide, listPendingActions, markHandled, countPendingActions } from "../src/lib/content/decisions";
 import {
   archivePost,
+  unarchivePost,
   createPost,
   deletePost,
   listPostsForClient,
@@ -235,6 +236,17 @@ describe("post lifecycle", () => {
     expect((await listPostsForStaff(db, org, { archived: true })).map((x) => x.id)).toEqual([p.id]);
   });
 
+  it("unarchiving brings the post back to the active tab, keeping its status", async () => {
+    const org = await seedOrg(db, "Desarquiva");
+    const p = await mkPost(org, { status: "em_aprovacao" });
+    await archivePost(db, org, p.id);
+    await unarchivePost(db, org, p.id);
+    expect((await listPostsForStaff(db, org, { archived: false })).map((x) => x.id)).toEqual([p.id]);
+    expect(await listPostsForStaff(db, org, { archived: true })).toEqual([]);
+    expect((await listPostsForClient(db, org, t0)).map((x) => x.id)).toEqual([p.id]);
+    await expect(unarchivePost(db, await seedOrg(db, "DesarquivaOutra"), p.id)).rejects.toThrow();
+  });
+
   it("scheduled and published keep the approval date; sending again clears it", async () => {
     const org = await seedOrg(db, "Agenda");
     const p = await mkPost(org, { status: "aprovado", approvedAt: t0 });
@@ -304,5 +316,90 @@ describe("pending actions", () => {
     await markHandled(db, a, forA[0].id);
     expect((await countPendingActions(db))[a]).toBe(1);
     await expect(markHandled(db, b, forA[1].id)).rejects.toThrow(); // evento de outra empresa
+  });
+});
+
+import { parseSaoPauloLocal, toSaoPauloLocal } from "../src/lib/content/dates";
+import { getProfile, saveProfile } from "../src/lib/content/profile";
+import { removeMedia, reorderMedia } from "../src/lib/content/media";
+
+describe("profile", () => {
+  it("returns an empty profile by default and saves handle, name, bio and link", async () => {
+    const org = await seedOrg(db, "Perfil");
+    expect(await getProfile(db, org)).toEqual({ handle: "", displayName: "", avatarKey: null, bio: "", link: "" });
+    await saveProfile(db, org, { handle: "@Loja.Do_Ze", displayName: " Loja do Zé ", bio: "Pães artesanais\nSeg a sáb", link: "https://lojadoze.com.br" });
+    expect(await getProfile(db, org)).toEqual({ handle: "loja.do_ze", displayName: "Loja do Zé", avatarKey: null, bio: "Pães artesanais\nSeg a sáb", link: "https://lojadoze.com.br" });
+    await saveProfile(db, org, { handle: "outro", displayName: "", bio: "", link: "" });
+    expect((await getProfile(db, org)).handle).toBe("outro");
+  });
+
+  it("refuses an invalid handle, a bio over 150 characters and a link with spaces", async () => {
+    const org = await seedOrg(db, "PerfilRuim");
+    const ok = { handle: "loja", displayName: "", bio: "", link: "" };
+    await expect(saveProfile(db, org, { ...ok, handle: "loja com espaço" })).rejects.toThrow(/usuário/i);
+    await expect(saveProfile(db, org, { ...ok, handle: "a".repeat(31) })).rejects.toThrow(/usuário/i);
+    await expect(saveProfile(db, org, { ...ok, bio: "x".repeat(151) })).rejects.toThrow(/150/);
+    await expect(saveProfile(db, org, { ...ok, link: "meu site .com" })).rejects.toThrow(/link/i);
+  });
+
+  it("saving the profile keeps the avatar", async () => {
+    const org = await seedOrg(db, "PerfilFoto");
+    await db.insert(schema.contentProfile).values({ organizationId: org, avatarFileKey: "00000000-0000-0000-0000-000000000000.jpg" });
+    await saveProfile(db, org, { handle: "loja", displayName: "", bio: "", link: "" });
+    expect((await getProfile(db, org)).avatarKey).toBe("00000000-0000-0000-0000-000000000000.jpg");
+  });
+});
+
+describe("media order and removal", () => {
+  async function postWith(org: string, n: number) {
+    const p = await mkPost(org, { format: "carrossel" });
+    const rows = await db
+      .insert(schema.contentMedia)
+      .values(Array.from({ length: n }, (_, i) => ({ organizationId: org, postId: p.id, kind: "image" as const, position: i, fileKey: `${i}.jpg`, mime: "image/jpeg", bytes: 1 })))
+      .returning();
+    return { p, rows };
+  }
+
+  it("reorders the media of a carousel", async () => {
+    const org = await seedOrg(db, "Ordem");
+    const { p, rows } = await postWith(org, 3);
+    await reorderMedia(db, org, p.id, [rows[2].id, rows[0].id, rows[1].id]);
+    const now = await db.select().from(schema.contentMedia).where(eq(schema.contentMedia.postId, p.id)).orderBy(schema.contentMedia.position);
+    expect(now.map((m) => m.fileKey)).toEqual(["2.jpg", "0.jpg", "1.jpg"]);
+    expect(now.map((m) => m.position)).toEqual([0, 1, 2]);
+  });
+
+  it("refuses an order that does not list exactly the media of the post", async () => {
+    const org = await seedOrg(db, "OrdemRuim");
+    const { p, rows } = await postWith(org, 2);
+    const other = await postWith(org, 1);
+    await expect(reorderMedia(db, org, p.id, [rows[0].id])).rejects.toThrow();
+    await expect(reorderMedia(db, org, p.id, [rows[0].id, other.rows[0].id])).rejects.toThrow();
+    await expect(reorderMedia(db, await seedOrg(db, "Intrusa"), p.id, [rows[0].id, rows[1].id])).rejects.toThrow();
+  });
+
+  it("removes a media row and asks the storage to delete the file; other organizations cannot", async () => {
+    const org = await seedOrg(db, "Remove");
+    const { rows } = await postWith(org, 2);
+    const removed: string[] = [];
+    const storage = { remove: async (o: string, k: string) => void removed.push(`${o}/${k}`) };
+    await expect(removeMedia(db, storage, await seedOrg(db, "RemoveOutra"), rows[0].id)).rejects.toThrow();
+    await removeMedia(db, storage, org, rows[0].id);
+    expect(removed).toEqual([`${org}/0.jpg`]);
+    expect(await db.select().from(schema.contentMedia).where(eq(schema.contentMedia.id, rows[0].id))).toHaveLength(0);
+  });
+});
+
+describe("São Paulo date fields", () => {
+  it("reads a datetime-local value as São Paulo time and writes it back", () => {
+    const d = parseSaoPauloLocal("2026-11-12T19:30");
+    expect(d?.toISOString()).toBe("2026-11-12T22:30:00.000Z");
+    expect(toSaoPauloLocal(d)).toBe("2026-11-12T19:30");
+    expect(toSaoPauloLocal(null)).toBe("");
+  });
+  it("returns null for empty or invalid input", () => {
+    expect(parseSaoPauloLocal("")).toBeNull();
+    expect(parseSaoPauloLocal("amanhã")).toBeNull();
+    expect(parseSaoPauloLocal("2026-13-45T25:61")).toBeNull();
   });
 });

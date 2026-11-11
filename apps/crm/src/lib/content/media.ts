@@ -1,4 +1,4 @@
-import { and, eq, max } from "drizzle-orm";
+import { and, eq, max, sql } from "drizzle-orm";
 import { schema, type Db } from "@dynamo/db";
 import { FileError, saveUpload } from "./files";
 import { ContentError } from "./types";
@@ -95,4 +95,29 @@ export async function findFileOwner(db: Db, key: string): Promise<string | null>
   if (m) return m.o;
   const [p] = await db.select({ o: schema.contentProfile.organizationId }).from(schema.contentProfile).where(eq(schema.contentProfile.avatarFileKey, key));
   return p?.o ?? null;
+}
+
+/** Remove uma mídia do post e apaga o arquivo do disco (as linhas saem primeiro: falha ao apagar o arquivo não desfaz). */
+export async function removeMedia(db: Db, storage: { remove(organizationId: string, key: string): Promise<void> }, organizationId: string, mediaId: string): Promise<void> {
+  const [m] = await db
+    .delete(schema.contentMedia)
+    .where(and(eq(schema.contentMedia.id, mediaId), eq(schema.contentMedia.organizationId, organizationId)))
+    .returning();
+  if (!m) throw new ContentError("Mídia não encontrada.");
+  await storage.remove(organizationId, m.fileKey).catch((e) => console.error(`Não foi possível apagar o arquivo ${m.fileKey}:`, e));
+}
+
+/** Nova ordem das mídias de um post (a lista precisa ter exatamente as mídias do post). */
+export async function reorderMedia(db: Db, organizationId: string, postId: string, orderedIds: string[]): Promise<void> {
+  const current = await db
+    .select({ id: schema.contentMedia.id })
+    .from(schema.contentMedia)
+    .where(and(eq(schema.contentMedia.postId, postId), eq(schema.contentMedia.organizationId, organizationId)));
+  const same = current.length === orderedIds.length && new Set(orderedIds).size === orderedIds.length && current.every((c) => orderedIds.includes(c.id));
+  if (!same) throw new ContentError("A ordem das imagens não confere com o post. Atualize a página e tente de novo.");
+  await db.transaction(async (tx) => {
+    // Duas etapas: a posição é única por post, então primeiro sai da faixa 0..n-1.
+    await tx.update(schema.contentMedia).set({ position: sql`${schema.contentMedia.position} + 1000` }).where(eq(schema.contentMedia.postId, postId));
+    for (const [i, id] of orderedIds.entries()) await tx.update(schema.contentMedia).set({ position: i }).where(eq(schema.contentMedia.id, id));
+  });
 }

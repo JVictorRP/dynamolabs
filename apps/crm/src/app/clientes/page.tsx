@@ -26,6 +26,9 @@ export default async function ClientesPage() {
           <li key={c.id}>
             <Link href={`/clientes/${c.id}`} className="flex flex-wrap items-center gap-x-6 gap-y-1 px-5 py-4 hover:bg-panel-2">
               <span className="min-w-0 flex-1 truncate text-sm font-semibold text-white">{c.name}</span>
+              {c.pendingActions > 0 && (
+                <span className="rounded-[4px] bg-amber px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-graphite">{c.pendingActions} precisa(m) de ação</span>
+              )}
               <span className="footer-line">{fmtInt(c.members)} pessoa(s)</span>
               <span className="footer-line">{fmtInt(c.leadsThisMonth)} leads no mês</span>
               <span className="footer-line">WhatsApp: {c.whatsappStatus ? WHATSAPP[c.whatsappStatus] : "—"}</span>

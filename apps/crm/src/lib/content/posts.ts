@@ -85,6 +85,12 @@ export async function archivePost(db: Db, organizationId: string, postId: string
   return p;
 }
 
+export async function unarchivePost(db: Db, organizationId: string, postId: string): Promise<Post> {
+  await findPost(db, organizationId, postId);
+  const [p] = await db.update(schema.contentPost).set({ archivedAt: null }).where(eq(schema.contentPost.id, postId)).returning();
+  return p;
+}
+
 async function withMedia(db: Db, posts: Post[]): Promise<PostWithMedia[]> {
   if (posts.length === 0) return [];
   const media = await db

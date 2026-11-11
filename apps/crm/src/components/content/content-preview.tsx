@@ -30,12 +30,15 @@ export function ContentPreview({
   fileBase,
   mode,
   onDecide,
+  headingAs: Heading = "h2",
 }: {
   profile: PreviewProfile;
   posts: PreviewPost[];
   fileBase: string;
   mode: Mode;
   onDecide?: (postId: string, decision: Decision, comment?: string) => Promise<DecideResult>;
+  /** Nível do título do perfil: "h1" quando a prévia é a página inteira (link do cliente), "h2" dentro de outra tela. */
+  headingAs?: "h1" | "h2";
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
   const [local, setLocal] = useState<Record<string, { status: string; daysLeft: number | null }>>({});
@@ -108,7 +111,7 @@ export function ContentPreview({
         <div className="flex items-center gap-4">
           <ProfileAvatar profile={profile} fileBase={fileBase} size={72} />
           <div className="min-w-0">
-            <h1 className="truncate text-lg font-semibold">{handle}</h1>
+            <Heading className="truncate text-lg font-semibold">{handle}</Heading>
             <p className="text-sm text-gray-300">
               <strong className="font-semibold text-mist">{posts.length}</strong> {posts.length === 1 ? "post" : "posts"} nesta prévia
             </p>

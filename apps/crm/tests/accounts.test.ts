@@ -139,3 +139,27 @@ describe("resetPasswordByEmail", () => {
     expect(await canLogin("cx@alta.com", r.senha)).toBe(true);
   });
 });
+
+describe("listClients pending actions", () => {
+  it("counts approvals and adjustments not handled yet, per company only", async () => {
+    const a = await createClientAccount(await deps(), { empresa: "Fila Um", nome: "A", email: "a@fila.com" });
+    const b = await createClientAccount(await deps(), { empresa: "Fila Dois", nome: "B", email: "b@fila.com" });
+    const mk = async (org: string) => (await db.insert(schema.contentPost).values({ organizationId: org, status: "em_aprovacao" }).returning())[0];
+    const pa = await mk(a.organization.id);
+    const pb = await mk(b.organization.id);
+    const events = await db
+      .insert(schema.contentEvent)
+      .values([
+        { organizationId: a.organization.id, postId: pa.id, type: "aprovado" },
+        { organizationId: a.organization.id, postId: pa.id, type: "ajuste_pedido", text: "x" },
+        { organizationId: a.organization.id, postId: pa.id, type: "enviado" },
+        { organizationId: a.organization.id, postId: pa.id, type: "aprovado", handledAt: new Date() },
+        { organizationId: b.organization.id, postId: pb.id, type: "aprovado" },
+      ])
+      .returning();
+    expect(events).toHaveLength(5);
+    const rows = await listClients(db, new Date());
+    expect(rows.find((r) => r.id === a.organization.id)?.pendingActions).toBe(2);
+    expect(rows.find((r) => r.id === b.organization.id)?.pendingActions).toBe(1);
+  });
+});
