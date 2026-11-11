@@ -224,3 +224,4 @@ export const leadEventRelations = relations(leadEvent, ({ one }) => ({
 export const pipelineStageRelations = relations(pipelineStage, ({ many }) => ({
   leads: many(lead),
 }));
+export * from "./chatbot-schema";
