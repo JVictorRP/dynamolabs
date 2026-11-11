@@ -57,7 +57,7 @@ export async function listConversations(db: Db, organizationId: string, opts: { 
   const rows = await db
     .select({
       conv: schema.conversation,
-      lastText: sql<string | null>`(select m.text from message m where m.conversation_id = ${schema.conversation.id} order by m.created_at desc limit 1)`,
+      lastText: sql<string | null>`(select m.text from message m where m.conversation_id = ${sql.raw(`"conversation"."id"`)} order by m.created_at desc limit 1)`,
     })
     .from(schema.conversation)
     .where(and(...where))
@@ -144,7 +144,7 @@ export async function listSheetSources(db: Db, organizationId: string) {
   return db
     .select({
       source: schema.sheetSource,
-      rows: sql<number>`(select count(*)::int from sheet_row r where r.source_id = ${schema.sheetSource.id})`,
+      rows: sql<number>`(select count(*)::int from sheet_row r where r.source_id = ${sql.raw(`"sheet_source"."id"`)})`,
     })
     .from(schema.sheetSource)
     .where(eq(schema.sheetSource.organizationId, organizationId))
