@@ -87,10 +87,10 @@ describe("copy has the same shape in every language", () => {
     expect(pt.status).toBe("final");
   });
 
-  it("starts en and es as provisional (the João Victor approves them later)", () => {
+  it("en and es are approved (final) by the João Victor, in the copy and in the legal texts", () => {
     for (const lang of others) {
-      expect(getCopy(lang).status).toBe("provisional");
-      expect(getLegal(lang).status).toBe("provisional");
+      expect(getCopy(lang).status).toBe("final");
+      expect(getLegal(lang).status).toBe("final");
     }
   });
 });

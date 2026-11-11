@@ -1,11 +1,11 @@
 import type { Copy } from "./types";
 
 /**
- * English (American). `status: "provisional"` until the João Victor approves this text: the language stays out of
- * production builds (it only exists in `next dev` and in the e2e build).
+ * English (American). Approved by João Victor on 2026-11-11 (`status: "final"`): the language is published in production.
+ * Set it back to "provisional" to take the language off the air again (it then only exists in `next dev` and in the e2e build).
  */
 export const en: Copy = {
-  status: "provisional",
+  status: "final",
   meta: {
     title: "Dynamo | Digital marketing with AI and automation",
     description: "Digital marketing agency with AI and automation: paid traffic, creative, websites and systems, with the quality and momentum of artificial intelligence.",

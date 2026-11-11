@@ -1,8 +1,8 @@
 import type { Legal } from "./types";
 
-/** English: faithful translation of the approved Portuguese text. Provisional until the João Victor approves it. */
+/** English: faithful translation of the approved Portuguese text. Approved by João Victor on 2026-11-11. */
 export const en: Legal = {
-  status: "provisional",
+  status: "final",
   back: "Back to home",
   provisionalNotice: "Provisional text: this page will be replaced by the approved version before the site is published.",
   privacy: {

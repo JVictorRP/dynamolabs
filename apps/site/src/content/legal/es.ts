@@ -2,7 +2,7 @@ import type { Legal } from "./types";
 
 /** Español: traducción fiel del texto aprobado en portugués. Provisional hasta que el João Victor lo apruebe. */
 export const es: Legal = {
-  status: "provisional",
+  status: "final",
   back: "Volver al inicio",
   provisionalNotice: "Texto provisional: esta página será reemplazada por la versión aprobada antes de la publicación del sitio.",
   privacy: {

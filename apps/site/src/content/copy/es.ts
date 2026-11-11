@@ -1,11 +1,11 @@
 import type { Copy } from "./types";
 
 /**
- * Español (latinoamericano neutro, trato de "tú"). `status: "provisional"` hasta que el João Victor apruebe este texto:
+ * Español (latinoamericano neutro, trato de "tú"). Aprobado por João Victor el 2026-11-11 (`status: "final"`):
  * el idioma queda fuera de los builds de producción (solo existe en `next dev` y en el build de pruebas e2e).
  */
 export const es: Copy = {
-  status: "provisional",
+  status: "final",
   meta: {
     title: "Dynamo | Marketing digital con IA y automatización",
     description: "Agencia de marketing digital con IA y automatización: tráfico pago, creatividad, sitio web y sistemas, con la calidad y el dinamismo de la inteligencia artificial.",

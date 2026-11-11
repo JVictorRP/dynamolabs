@@ -62,11 +62,11 @@ describe("Footer", () => {
 });
 
 describe("statusByLang", () => {
-  it("reports the copy and legal status of each language (pt final, en and es still provisional)", () => {
+  it("reports the copy and legal status of each language (pt, en and es approved)", () => {
     expect(statusByLang()).toEqual({
       pt: { copy: "final", legal: "final" },
-      en: { copy: "provisional", legal: "provisional" },
-      es: { copy: "provisional", legal: "provisional" },
+      en: { copy: "final", legal: "final" },
+      es: { copy: "final", legal: "final" },
     });
   });
 });
