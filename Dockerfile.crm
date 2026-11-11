@@ -28,6 +28,9 @@ FROM node:22-alpine AS runner
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0
 WORKDIR /app
 RUN addgroup -S app && adduser -S app -G app
+# Arquivos do conteúdo (prévias): pasta do volume do Easypanel, já com o dono certo para o usuário "app" gravar.
+RUN mkdir -p /data/content && chown -R app:app /data
+ENV CONTENT_DIR=/data/content
 # Ferramentas mínimas para rodar as migrações no boot
 RUN mkdir /migrate && cd /migrate && npm init -y >/dev/null && npm i --omit=dev drizzle-orm@0.45.4 postgres@4.1.0 >/dev/null
 COPY --from=builder --chown=app:app /repo/apps/crm/.next/standalone ./
