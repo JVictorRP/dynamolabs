@@ -20,3 +20,4 @@ export * from "./brain/llm";
 export * from "./brain/prompt";
 export * from "./brain/respond";
 export * from "./brain/style-guide";
+export * from "./panel";

@@ -44,6 +44,12 @@ importers:
 
   apps/crm:
     dependencies:
+      '@anthropic-ai/sdk':
+        specifier: ^1.8.0
+        version: 1.8.0(zod@4.6.7)
+      '@dynamo/chatbot':
+        specifier: workspace:*
+        version: link:../../packages/chatbot
       '@dynamo/db':
         specifier: workspace:*
         version: link:../../packages/db
