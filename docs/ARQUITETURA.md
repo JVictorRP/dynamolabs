@@ -27,6 +27,7 @@
 | Deploy | Easypanel (já instalado no VPS, o mesmo que roda o n8n) | Deploy pelo painel a partir do GitHub, SSL automático, sem terminal |
 | Subdomínios | site e app separados | Site rápido e indexável; app privado (`noindex`) |
 | Chatbot | Serviço próprio `apps/bot` + núcleo `packages/chatbot`; WhatsApp Cloud API oficial direto (sem intermediário); Claude Haiku 5.5 nas conversas e Sonnet 5.5 no guia de estilo | Produto vendido aos clientes; atendimento não cai quando o CRM é reimplantado; custo por mensagem gravado para a simulação de preços |
+| Conteúdo e prévia | Prévia do Instagram no celular por **link fixo por cliente** (`/p/<código>`, sem login); arquivos no disco do VPS (volume `/data`) atrás de uma interface de armazenamento; aprovação anônima; **3 dias depois de aprovado o post sai do link** (regra calculada na leitura) e a equipe mantém tudo arquivado; avisos por painel, webhook do n8n e e-mail (Resend grátis) | O cliente aprova sem precisar de acesso ao CRM; link revogável; nada a rodar em horário agendado |
 | Banco compartilhado | Esquema em `packages/db`; migrações geradas e aplicadas pelo CRM | Um só histórico de migrações para CRM e bot |
 | Visual | Design system "Dynamo Labs" v8 (artifact) | Mesmas cores, fontes (Archivo, Syncopate, Oxanium) e regras dos posts: fundo escuro, 80/15/5, degradê só preto e branco |
 
@@ -46,4 +47,5 @@
 - **Fase 2 — Site:** portfólio com o design system da Dynamo, cases, captação de leads (que entram no próprio CRM da Dynamo).
 - **Fase 3 — Painel Dynamo:** tela interna para cadastrar clientes, subir conteúdos e gerar chaves de API sem terminal.
 - **Fase 4 — Crescimento:** e-mail transacional, Google Ads via n8n, alertas de lead novo.
+- **Conteúdo e prévia (pronto):** equipe monta posts, carrosséis e Reels; cliente vê o celular com a grade por link e aprova.
 - **Chatbot de WhatsApp (em construção):** estilo de fala aprendido, consulta a planilhas, automações; depois, simulação de custos por cliente e Embedded Signup.
