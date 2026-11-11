@@ -1,5 +1,4 @@
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import { createDb } from "@dynamo/db";
 import * as schema from "./schema";
 
 const connectionString = process.env.DATABASE_URL ?? "postgres://dynamo:dynamo@localhost:5432/dynamo";
@@ -9,7 +8,5 @@ const connectionString = process.env.DATABASE_URL ?? "postgres://dynamo:dynamo@l
 export const dbSsl = process.env.DATABASE_SSL === "true" ? ("require" as const) : false;
 
 // Uma única conexão reaproveitada pelo app inteiro.
-const client = postgres(connectionString, { max: 10, ssl: dbSsl });
-
-export const db = drizzle(client, { schema });
+export const db = createDb(connectionString, { ssl: dbSsl, max: 10 });
 export { schema };
