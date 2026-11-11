@@ -61,3 +61,15 @@ describe("rules", () => {
     expect(monthKey(new Date("2026-12-01T02:00:00Z"))).toBe("2026-11");
   });
 });
+
+describe("manual takeover (review re-graded 10)", () => {
+  it("holds human mode with no deadline until released", async () => {
+    expect(isHumanMode({ mode: "humano", handoffUntil: null }, now)).toBe(true);
+    const org = await seedOrg(db, "Assumir");
+    const { conversationId } = await recordIncoming(db, org, incoming());
+    await setHumanMode(db, org, conversationId, null);
+    const [c] = await db.select().from(schema.conversation).where(eq(schema.conversation.id, conversationId));
+    expect(c).toMatchObject({ mode: "humano", handoffUntil: null });
+    expect(isHumanMode(c, new Date(Date.now() + 30 * 24 * 3600_000))).toBe(true);
+  });
+});

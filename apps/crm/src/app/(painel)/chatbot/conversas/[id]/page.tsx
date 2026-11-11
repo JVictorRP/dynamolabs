@@ -29,8 +29,12 @@ export default async function ConversaPage({ params }: { params: Promise<{ id: s
           {human ? <GhostButton type="submit">Devolver ao bot</GhostButton> : <CtaButton type="submit">Assumir</CtaButton>}
         </form>
       </PageHeader>
-      {human && conv.handoffUntil && (
-        <p className="text-sm text-amber">Em modo humano até {fmtDate(conv.handoffUntil)}: o bot não responde esta conversa.</p>
+      {human && (
+        <p className="text-sm text-amber">
+          {conv.handoffUntil
+            ? `Em modo humano até ${fmtDate(conv.handoffUntil)}: o bot não responde esta conversa.`
+            : "Em modo humano até alguém devolver ao bot: o bot não responde esta conversa."}
+        </p>
       )}
       <Card className="space-y-4">
         {conv.messages.map((m) => (

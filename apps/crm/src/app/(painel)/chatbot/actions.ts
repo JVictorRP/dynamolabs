@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import {
   addSheetSource,
   applyStyleGuideDraft,
-  getConfig,
   importStyleExport,
   listAuthors,
   parseExport,
@@ -37,8 +36,8 @@ export async function toggleBotAction(formData: FormData) {
 export async function takeOverAction(formData: FormData) {
   const { organization } = await requireManager();
   const id = str(formData, "conversationId");
-  const config = await getConfig(db, organization.id);
-  await setHumanMode(db, organization.id, id, config.handoffHours);
+  // Assumir pelo painel não expira: vale até alguém clicar em "Devolver ao bot".
+  await setHumanMode(db, organization.id, id, null);
   revalidatePath(`/chatbot/conversas/${id}`);
 }
 

@@ -5,8 +5,9 @@ import { markAllAnswered } from "./conversations";
 const HOUR = 3600_000;
 const SP_OFFSET_HOURS = 3; // America/Sao_Paulo = UTC−3 (sem horário de verão desde 2019)
 
+/** Modo humano: sem prazo (equipe assumiu pelo painel) ou até o prazo da passagem automática. */
 export function isHumanMode(conv: { mode: string; handoffUntil: Date | null }, now: Date): boolean {
-  return conv.mode === "humano" && conv.handoffUntil !== null && conv.handoffUntil.getTime() > now.getTime();
+  return conv.mode === "humano" && (conv.handoffUntil === null || conv.handoffUntil.getTime() > now.getTime());
 }
 
 /** Regra da Meta: resposta livre só até 24 h depois da última mensagem do cliente. */
@@ -45,10 +46,11 @@ export async function monthSpendBrl(db: Db, organizationId: string, now: Date, u
 
 export const overCap = (spendBrl: number, capBrl: number) => spendBrl >= capBrl;
 
-export async function setHumanMode(db: Db, organizationId: string, conversationId: string, hours: number): Promise<void> {
+/** `hours = null`: sem prazo, até alguém devolver ao bot pelo painel. */
+export async function setHumanMode(db: Db, organizationId: string, conversationId: string, hours: number | null): Promise<void> {
   await db
     .update(schema.conversation)
-    .set({ mode: "humano", handoffUntil: new Date(Date.now() + hours * HOUR), updatedAt: new Date() })
+    .set({ mode: "humano", handoffUntil: hours === null ? null : new Date(Date.now() + hours * HOUR), updatedAt: new Date() })
     .where(and(eq(schema.conversation.id, conversationId), eq(schema.conversation.organizationId, organizationId)));
 }
 
