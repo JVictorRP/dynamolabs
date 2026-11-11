@@ -10,6 +10,7 @@ import { saveUpload } from "../src/lib/content/files";
 import { setAvatar } from "../src/lib/content/media";
 import { ensureShare, regenerateShare } from "../src/lib/content/share";
 import { createFsStorage, type ContentStorage } from "../src/lib/content/storage";
+import { LINK_LIMITS } from "../src/lib/content/limits";
 import { clientIp, createRateLimiter } from "../src/lib/rate-limit";
 import { config as proxyConfig } from "../src/proxy";
 
@@ -193,6 +194,23 @@ describe("rate limiter and client IP", () => {
     expect(clientIp(h("1.2.3.4, 6.6.6.6, 203.0.113.9"))).toBe("203.0.113.9");
     expect(clientIp(h("6.6.6.6, 203.0.113.9, 10.0.0.2"), 2)).toBe("203.0.113.9");
     expect(clientIp(new Headers())).toBe("desconhecido");
+  });
+});
+
+describe("link limits", () => {
+  const limiterFor = (max: number) => createRateLimiter({ windowMs: LINK_LIMITS.windowMs, max, now: () => t0.getTime() });
+
+  it("an iPhone watching Reels (hundreds of small Range requests) is not locked out of the files", () => {
+    const files = limiterFor(LINK_LIMITS.files);
+    for (let i = 0; i < 1000; i++) expect(files.hit("203.0.113.9")).toBe(true);
+  });
+
+  it("page views stay on a small bucket (the code has 144 bits, so this only deters scraping)", () => {
+    const pages = limiterFor(LINK_LIMITS.pages);
+    for (let i = 0; i < LINK_LIMITS.pages; i++) expect(pages.hit("203.0.113.9")).toBe(true);
+    expect(pages.hit("203.0.113.9")).toBe(false);
+    expect(LINK_LIMITS.files).toBeGreaterThanOrEqual(LINK_LIMITS.pages * 5);
+    expect(LINK_LIMITS.decisions).toBe(20);
   });
 });
 

@@ -144,6 +144,11 @@ await newPost("feed", "Post de teste de regra");
 await editor().locator('input[type="file"]').first().setInputFiles({ name: "falso.jpg", mimeType: "image/jpeg", buffer: Buffer.from("isto é só texto, não é imagem".repeat(5)) });
 await editor().getByText("Formato não aceito").waitFor();
 check("arquivo que não é imagem é recusado com mensagem clara", true);
+// A legenda digitada e ainda não salva não pode se perder quando o envio da imagem termina
+await editor().locator("textarea").fill("Legenda digitada e ainda não salva");
+await editor().locator('input[type="file"]').first().setInputFiles(join(FX, "mini2.png"));
+await page.waitForFunction(() => document.querySelectorAll("#editor ul.grid li").length === 1);
+check("a legenda ainda não salva continua no editor depois do envio da imagem", (await editor().locator("textarea").inputValue()) === "Legenda digitada e ainda não salva");
 page.once("dialog", (d) => d.accept());
 await editor().getByRole("button", { name: "Apagar de vez" }).click();
 await page.waitForURL((u) => !u.search.includes("editar="));
@@ -169,13 +174,15 @@ await link.goto(`${BASE}/p/${token}`);
 check("link abre sem login e mostra o perfil como h1", (await link.locator("h1").innerText()) === "lojadoze" && !link.url().includes("/login"));
 check("o link não pede login nem mostra menu do painel", (await link.getByText("Meu painel").count()) === 0);
 const cell = (re) => link.getByRole("button", { name: re });
-check("a grade tem 3 posts, com Reels e carrossel identificados", (await link.locator("ul button").count()) === 3 && (await cell(/Abrir Reels: Reels da fornada/).count()) === 1 && (await cell(/Abrir carrossel: Carrossel de pães/).count()) === 1);
+check("a grade tem 3 posts, com Reels e carrossel identificados", (await link.locator("ul button").count()) === 3 && (await cell(/Abrir Reels\./).count()) === 1 && (await cell(/Abrir carrossel\./).count()) === 1);
+const pagina = await link.content();
+check("o título interno dos posts não chega ao navegador do cliente", !pagina.includes("Carrossel de pães") && !pagina.includes("Reels da fornada") && !pagina.includes("Post único"));
 const robots = await link.locator('meta[name="robots"]').first().getAttribute("content");
 check("a página pede noindex", /noindex/.test(robots ?? ""));
 await link.screenshot({ path: join(OUT, "link-grade.png") });
 
 // Teclado: Enter abre, Esc fecha e devolve o foco
-await cell(/Abrir post: Post único/).focus();
+await cell(/Abrir post\./).focus();
 await link.keyboard.press("Enter");
 await link.getByRole("dialog").waitFor();
 check("Enter abre a prévia do post em um diálogo", true);
@@ -224,7 +231,7 @@ check("o botão de som alterna", (await link.getByRole("button", { name: "Deslig
 await link.getByRole("button", { name: "Posts" }).click();
 
 // Aprovar o post único
-await cell(/Abrir post: Post único/).click();
+await cell(/Abrir post\./).click();
 await link.getByRole("button", { name: "Aprovar", exact: true }).click();
 await link.getByText("Aprovado ✓").waitFor();
 check("aprovar mostra os dias que o post ainda fica no link", (await link.getByText(/continua aqui por mais 3 dias/).count()) === 1);
@@ -233,7 +240,7 @@ await link.getByRole("button", { name: "Posts" }).click();
 
 // Recarregar mantém os estados
 await link.reload();
-check("ao recarregar, o estado de cada post continua", (await cell(/Abrir post: Post único.*Aprovado/).count()) === 1 && (await cell(/Abrir carrossel.*Ajuste pedido/).count()) === 1);
+check("ao recarregar, o estado de cada post continua", (await cell(/Abrir post\..*Aprovado/).count()) === 1 && (await cell(/Abrir carrossel\..*Ajuste pedido/).count()) === 1);
 
 /* ───── Equipe vê as decisões ───── */
 await page.goto(`${BASE}/clientes/${orgId}/conteudo`);
@@ -249,7 +256,7 @@ check("marcar como tratado tira da fila", true);
 /* ───── Janela de 3 dias ───── */
 sql(`update content_post set approved_at = now() - interval '73 hours' where organization_id='${orgId}' and title='Post único'`);
 await link.reload();
-check("73 h depois da aprovação o post sai do link", (await link.locator("ul button").count()) === 2 && (await cell(/Abrir post: Post único/).count()) === 0);
+check("73 h depois da aprovação o post sai do link", (await link.locator("ul button").count()) === 2 && (await cell(/Abrir post\./).count()) === 0);
 await page.goto(`${BASE}/clientes/${orgId}/conteudo`);
 check("…mas a equipe continua com ele em Ativos", (await page.locator("section[aria-label='Posts'] li:has-text('Post único')").count()) === 1);
 sql(`update content_post set approved_at = now() - interval '70 hours' where organization_id='${orgId}' and title='Post único'`);

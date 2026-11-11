@@ -27,13 +27,16 @@ export const STATUS_LABEL: Record<string, string> = {
   publicado: "Publicado",
 };
 
-/** Serializa um post do banco para o navegador (datas em texto, mídias em ordem). */
-export function toPreviewPost(post: (PostWithMedia | ClientPost) & { daysLeft?: number | null }): PreviewPost {
+/**
+ * Serializa um post do banco para o navegador (datas em texto, mídias em ordem).
+ * Para o cliente (`forClient`), o título interno nem sai do servidor: é anotação da equipe, não conteúdo do post.
+ */
+export function toPreviewPost(post: (PostWithMedia | ClientPost) & { daysLeft?: number | null }, opts: { forClient?: boolean } = {}): PreviewPost {
   return {
     id: post.id,
     format: post.format,
     status: post.status,
-    title: post.title,
+    title: opts.forClient ? null : post.title,
     caption: post.caption,
     scheduledAt: post.scheduledAt ? new Date(post.scheduledAt).toISOString() : null,
     approvedAt: post.approvedAt ? new Date(post.approvedAt).toISOString() : null,
@@ -42,6 +45,13 @@ export function toPreviewPost(post: (PostWithMedia | ClientPost) & { daysLeft?: 
       .sort((a, b) => a.position - b.position)
       .map((m) => ({ id: m.id, kind: m.kind, fileKey: m.fileKey, isCover: m.isCover, alt: m.alt })),
   };
+}
+
+/** Etiqueta curta da grade (cabe na célula sem ser cortada). O cliente vê agendado e publicado como "Aprovado". */
+export function gridBadge(status: string, mode: "client" | "staff"): string {
+  if (status === "ajuste_pedido") return "Ajuste";
+  if (mode === "client" && (status === "agendado" || status === "publicado")) return STATUS_LABEL.aprovado;
+  return STATUS_LABEL[status] ?? status;
 }
 
 const MAX_LINES = 3;

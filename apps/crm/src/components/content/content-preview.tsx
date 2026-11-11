@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { clientLabel, DecisionBar, type DecideResult } from "./decision-bar";
+import { DecisionBar, type DecideResult } from "./decision-bar";
 import { CarouselIcon, ChevronLeftIcon, ReelsIcon } from "./icons";
 import { PhoneFrame } from "./phone-frame";
 import { PostView, ProfileAvatar, handleOf } from "./post-view";
-import { gridThumb, STATUS_LABEL, type PreviewPost, type PreviewProfile } from "./preview-model";
+import { gridBadge, gridThumb, STATUS_LABEL, type PreviewPost, type PreviewProfile } from "./preview-model";
 import { ReelsView } from "./reels-view";
 
 type Mode = "client" | "staff";
@@ -76,7 +76,7 @@ export function ContentPreview({
   }
 
   const overlay = openPost && (
-    <div role="dialog" aria-modal="true" aria-label={`Prévia: ${openPost.title ?? "post"}`} className="fixed inset-0 z-40 flex flex-col bg-void sm:absolute sm:z-20 sm:pt-10">
+    <div role="dialog" aria-modal="true" aria-label={`Prévia do ${openPost.format === "reels" ? "Reels" : openPost.format === "carrossel" ? "carrossel" : "post"}${openPost.title ? `: ${openPost.title}` : ""}`} className="fixed inset-0 z-40 flex flex-col bg-void sm:absolute sm:z-20 sm:pt-10">
       <div className="flex shrink-0 items-center gap-2 border-b border-graphite px-2 py-2">
         <button ref={backButton} type="button" onClick={close} className="flex items-center gap-1 rounded-[8px] px-2 py-1.5 text-sm font-medium text-mist hover:bg-graphite focus-visible:outline-2 focus-visible:outline-teal">
           <ChevronLeftIcon className="size-5" />
@@ -136,7 +136,8 @@ export function ContentPreview({
           {posts.map((raw) => {
             const p = view(raw);
             const thumb = gridThumb(p);
-            const badge = mode === "client" ? clientLabel(p.status) : (STATUS_LABEL[p.status] ?? p.status);
+            const badge = gridBadge(p.status, mode);
+            const statusFull = mode === "client" && (p.status === "agendado" || p.status === "publicado") ? "Aprovado" : (STATUS_LABEL[p.status] ?? p.status);
             return (
               <li key={p.id}>
                 <button
@@ -145,7 +146,7 @@ export function ContentPreview({
                     lastCell.current = e.currentTarget;
                     setOpenId(p.id);
                   }}
-                  aria-label={`Abrir ${p.format === "reels" ? "Reels" : p.format === "carrossel" ? "carrossel" : "post"}${p.title ? `: ${p.title}` : ""}. ${badge}.`}
+                  aria-label={`Abrir ${p.format === "reels" ? "Reels" : p.format === "carrossel" ? "carrossel" : "post"}${p.title ? `: ${p.title}` : ""}. ${statusFull}.`}
                   className="relative block aspect-[4/5] w-full overflow-hidden bg-panel-2 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-teal"
                 >
                   {thumb ? (
@@ -156,7 +157,7 @@ export function ContentPreview({
                       <img src={`${fileBase}/${thumb.fileKey}`} alt={thumb.alt ?? ""} className="h-full w-full object-cover" loading="lazy" draggable={false} />
                     )
                   ) : (
-                    <span className="grid h-full place-items-center p-2 text-center text-[11px] font-semibold uppercase tracking-[0.1em] text-gray-500">{p.title ?? "Sem imagem"}</span>
+                    <span className="grid h-full place-items-center p-2 text-center text-[11px] font-semibold uppercase tracking-[0.1em] text-gray-500">{mode === "staff" ? (p.title ?? "Sem imagem") : "Sem imagem"}</span>
                   )}
                   <span className={`absolute left-1 top-1 max-w-[calc(100%-1.75rem)] truncate rounded-[4px] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] ${BADGE[p.status] ?? BADGE.rascunho}`}>{badge}</span>
                   {(p.format === "carrossel" || p.format === "reels") && (

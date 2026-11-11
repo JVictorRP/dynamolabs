@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { STATUS_LABEL } from "./preview-model";
 
 export type DecideResult = { ok: true } | { ok: false; error: string };
 
@@ -87,6 +86,3 @@ export function DecisionBar({
     </div>
   );
 }
-
-/** Rótulo do status para o cliente: aprovado, agendado e publicado aparecem todos como "Aprovado". */
-export const clientLabel = (status: string) => (status === "agendado" || status === "publicado" ? STATUS_LABEL.aprovado : (STATUS_LABEL[status] ?? status));

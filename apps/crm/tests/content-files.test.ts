@@ -1,4 +1,4 @@
-import { mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
@@ -7,7 +7,7 @@ import { schema, type Db } from "@dynamo/db";
 import { createTestDb, seedOrg } from "@dynamo/db/testing";
 import { attachMedia, findFileOwner, setAvatar } from "../src/lib/content/media";
 import { detectKind, FileError, neutralNotFound, saveUpload, serveFile } from "../src/lib/content/files";
-import { checkWritable, createFsStorage, type ContentStorage } from "../src/lib/content/storage";
+import { checkWritable, createFsStorage, findMissingFiles, volumeProblem, type ContentStorage } from "../src/lib/content/storage";
 
 let db: Db;
 let close: () => Promise<void>;
@@ -108,6 +108,57 @@ describe("saveUpload", () => {
       },
     });
     await expect(saveUpload(storage, { organizationId: org, body: cut, contentLength: null })).rejects.toThrow("conexão caiu");
+    expect(await filesIn(org)).toEqual([]);
+  });
+});
+
+describe("disk failures during an upload", () => {
+  const maybe = process.getuid?.() === 0 ? it.skip : it; // como root, chmod não impede a gravação
+
+  maybe("rejects instead of hanging or crashing when the folder cannot be written and the data arrives late", async () => {
+    const org = await orgOf("SemPermissao");
+    await mkdir(join(dir, org), { recursive: true });
+    await chmod(join(dir, org), 0o500);
+    const uncaught: unknown[] = [];
+    const onUncaught = (e: unknown) => void uncaught.push(e);
+    process.on("uncaughtException", onUncaught);
+    try {
+      const late = new ReadableStream<Uint8Array>({
+        async pull(c) {
+          await new Promise((r) => setTimeout(r, 80)); // o fluxo de gravação já falhou quando o dado chega
+          c.enqueue(JPG(100));
+          c.close();
+        },
+      });
+      const outcome = await Promise.race([
+        storage.put(org, "00000000-0000-4000-8000-000000000001.jpg", late, { maxBytes: 1000 }).then(
+          () => "ok",
+          (e: NodeJS.ErrnoException) => `erro:${e.code ?? e.message}`,
+        ),
+        new Promise<string>((r) => setTimeout(() => r("travou"), 3000)),
+      ]);
+      await new Promise((r) => setTimeout(r, 50));
+      expect(outcome).toMatch(/^erro:/);
+      expect(uncaught).toEqual([]);
+    } finally {
+      process.off("uncaughtException", onUncaught);
+      await chmod(join(dir, org), 0o700);
+    }
+    expect(await filesIn(org)).toEqual([]);
+  });
+
+  it("also rejects when the source fails after the first chunks were accepted, leaving nothing behind", async () => {
+    const org = await orgOf("ErroNoMeio");
+    let n = 0;
+    const body = new ReadableStream<Uint8Array>({
+      async pull(c) {
+        n += 1;
+        if (n === 1) return c.enqueue(JPG(100));
+        await new Promise((r) => setTimeout(r, 30));
+        c.error(new Error("origem caiu"));
+      },
+    });
+    await expect(storage.put(org, "00000000-0000-4000-8000-000000000002.jpg", body, { maxBytes: 1000 })).rejects.toThrow("origem caiu");
     expect(await filesIn(org)).toEqual([]);
   });
 });
@@ -287,5 +338,37 @@ describe("attachMedia", () => {
     expect(await findFileOwner(db, media.fileKey)).toBe(org);
     expect(await findFileOwner(db, avatar.key)).toBe(org);
     expect(await findFileOwner(db, "00000000-0000-0000-0000-000000000000.jpg")).toBeNull();
+  });
+});
+
+describe("missing volume and missing files", () => {
+  it("in production, warns when /data is not a separate mount (same device as the container root)", async () => {
+    const same = async () => ({ dev: 64 });
+    const mount = async (p: string) => ({ dev: p === "/" ? 64 : 99 });
+    expect(await volumeProblem("/data/content", { production: true, stat: same })).toMatch(/volume.*\/data/i);
+    expect(await volumeProblem("/data/content", { production: true, stat: mount })).toBeNull();
+  });
+
+  it("does not judge development, a custom folder, or a folder that cannot be inspected", async () => {
+    const same = async () => ({ dev: 64 });
+    expect(await volumeProblem("/data/content", { production: false, stat: same })).toBeNull();
+    expect(await volumeProblem("/srv/arquivos", { production: true, stat: same })).toBeNull();
+    expect(await volumeProblem("/data/content", { production: true, stat: async () => { throw new Error("sem acesso"); } })).toBeNull();
+  });
+
+  it("counts database files that do not exist on disk (the sign of a forgotten volume), per organization", async () => {
+    const a = await orgOf("FaltaA");
+    const b = await orgOf("FaltaB");
+    const mk = async (org: string) => (await db.insert(schema.contentPost).values({ organizationId: org, format: "carrossel" }).returning())[0];
+    const pa = await mk(a);
+    const pb = await mk(b);
+    const kept = await attachMedia(db, storage, a, pa.id, { body: streamOf(JPG()), contentLength: 64 });
+    const lost = await attachMedia(db, storage, a, pa.id, { body: streamOf(PNG()), contentLength: 64 });
+    await attachMedia(db, storage, b, pb.id, { body: streamOf(JPG()), contentLength: 64 });
+    await rm(join(dir, a, lost.fileKey)); // como se o volume tivesse sumido
+    expect(await findMissingFiles(db, storage, a)).toEqual({ total: 2, missing: 1 });
+    expect(await findMissingFiles(db, storage, b)).toEqual({ total: 1, missing: 0 });
+    expect((await findMissingFiles(db, storage)).missing).toBeGreaterThanOrEqual(1);
+    expect(kept.fileKey).not.toBe(lost.fileKey);
   });
 });

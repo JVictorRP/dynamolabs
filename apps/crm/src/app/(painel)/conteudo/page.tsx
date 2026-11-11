@@ -15,7 +15,7 @@ export default async function ConteudoPage() {
   return (
     <>
       <PageHeader eyebrow="Conteúdo" title="Sua grade" highlight="grade" support="Toque no post para ver a prévia, aprovar ou pedir ajuste." />
-      <PanelPreview profile={profile} posts={posts.map(toPreviewPost)} />
+      <PanelPreview profile={profile} posts={posts.map((p) => toPreviewPost(p, { forClient: true }))} />
     </>
   );
 }

@@ -7,7 +7,8 @@ import { toSaoPauloLocal } from "@/lib/content/dates";
 import { getProfile } from "@/lib/content/profile";
 import { listPostsForStaff } from "@/lib/content/posts";
 import { ensureShare } from "@/lib/content/share";
-import { getStorage } from "@/lib/content/storage-instance";
+import { contentDir, getStorage } from "@/lib/content/storage-instance";
+import { findMissingFiles, volumeProblem } from "@/lib/content/storage";
 import { db } from "@/lib/db";
 import { fmtDate } from "@/lib/format";
 import { Card, CardTitle, PageHeader } from "@/components/ui";
@@ -29,7 +30,7 @@ export default async function ConteudoClientePage({ params, searchParams }: { pa
   const base = (process.env.BETTER_AUTH_URL ?? "").replace(/\/$/, "");
 
   const storage = getStorage();
-  const [share, profile, active, listed, pending, usedHere, usedTotal] = await Promise.all([
+  const [share, profile, active, listed, pending, usedHere, usedTotal, missingFiles, volumeWarning] = await Promise.all([
     ensureShare(db, id),
     getProfile(db, id),
     listPostsForStaff(db, id, { archived: false }),
@@ -37,6 +38,8 @@ export default async function ConteudoClientePage({ params, searchParams }: { pa
     listPendingActions(db, id),
     storage.usage(id).catch(() => 0),
     storage.usage().catch(() => 0),
+    findMissingFiles(db, storage, id).catch(() => ({ total: 0, missing: 0 })),
+    volumeProblem(contentDir(), { production: process.env.NODE_ENV === "production" }),
   ]);
   const url = `${base}/p/${share.token}`;
   const message = `Olá! Seus próximos posts estão prontos para você ver e aprovar: ${url}\nToque em cada post para ver a prévia e aprove ou peça ajuste.`;
@@ -47,6 +50,18 @@ export default async function ConteudoClientePage({ params, searchParams }: { pa
   return (
     <>
       <PageHeader eyebrow={client.name} title="Conteúdo" highlight="Conteúdo" support="Monte os posts e mande o link para o cliente aprovar." />
+      {(missingFiles.missing > 0 || volumeWarning) && (
+        <Card className="space-y-2 !border-amber">
+          <CardTitle>Atenção com os arquivos</CardTitle>
+          {missingFiles.missing > 0 && (
+            <p className="text-sm text-amber">
+              {missingFiles.missing} de {missingFiles.total} arquivos deste cliente existem no banco, mas não no disco do servidor. As imagens aparecem quebradas.
+              Isso costuma acontecer quando o volume /data não está montado ou foi trocado.
+            </p>
+          )}
+          {volumeWarning && <p className="text-sm text-gray-300">{volumeWarning}</p>}
+        </Card>
+      )}
       <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_420px]">
         <div className="min-w-0 space-y-10">
           <Card className="space-y-4">
@@ -90,7 +105,7 @@ export default async function ConteudoClientePage({ params, searchParams }: { pa
 
           {editing && (
             <PostEditor
-              key={editing.id + editing.status + editing.media.map((m) => m.id).join()}
+              key={editing.id}
               orgId={id}
               post={{ ...toPreviewPost(editing), scheduledLocal: toSaoPauloLocal(editing.scheduledAt), archived: Boolean(editing.archivedAt) }}
             />
@@ -139,7 +154,7 @@ export default async function ConteudoClientePage({ params, searchParams }: { pa
 
         <aside className="lg:sticky lg:top-6 lg:self-start" aria-label="Prévia como o cliente vê">
           <p className="eyebrow eyebrow-muted mb-4 text-center">Prévia (todos os posts ativos)</p>
-          <ContentPreview profile={previewProfile} posts={active.map(toPreviewPost)} fileBase={fileBase} mode="staff" />
+          <ContentPreview profile={previewProfile} posts={active.map((p) => toPreviewPost(p))} fileBase={fileBase} mode="staff" />
         </aside>
       </div>
     </>

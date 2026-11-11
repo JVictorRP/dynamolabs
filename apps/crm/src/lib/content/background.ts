@@ -2,8 +2,8 @@ import "server-only";
 import { db } from "../db";
 import { flushDigests } from "./digest";
 import { createResendSender } from "./resend";
-import { checkWritable } from "./storage";
-import { contentDir } from "./storage-instance";
+import { checkWritable, findMissingFiles, volumeProblem } from "./storage";
+import { contentDir, getStorage } from "./storage-instance";
 
 const KEY = Symbol.for("dynamo.content.background");
 
@@ -16,6 +16,11 @@ export function startContentBackground() {
   checkWritable(contentDir()).then(
     () => console.log(`Arquivos do conteúdo: ${contentDir()} (gravação ok).`),
     (e) => console.error(`ATENÇÃO — ${(e as Error).message}`),
+  );
+  void volumeProblem(contentDir(), { production: process.env.NODE_ENV === "production" }).then((msg) => msg && console.error(`ATENÇÃO — ${msg}`));
+  findMissingFiles(db, getStorage()).then(
+    ({ total, missing }) => missing > 0 && console.error(`ATENÇÃO — ${missing} de ${total} arquivos do conteúdo registrados no banco não existem no disco. O volume /data está montado e é o mesmo de antes?`),
+    () => {},
   );
 
   const apiKey = process.env.RESEND_API_KEY?.trim();

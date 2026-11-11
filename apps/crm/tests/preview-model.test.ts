@@ -4,6 +4,7 @@ import {
   carouselImages,
   daysLeft,
   formatScheduled,
+  gridBadge,
   gridThumb,
   reelsParts,
   toPreviewPost,
@@ -83,6 +84,25 @@ describe("media helpers", () => {
     expect(reelsParts(r)).toEqual({ video: expect.objectContaining({ fileKey: "v.mp4" }), cover: expect.objectContaining({ fileKey: "c.jpg" }) });
     expect(reelsParts(post({ format: "reels" }))).toEqual({ video: null, cover: null });
   });
+  it("for the client the internal title never leaves the server; for the team it stays", () => {
+    const base = { id: "x", format: "feed", status: "em_aprovacao", title: "v3 — cliente pediu mais claro, de novo", caption: "Legenda pública", scheduledAt: null, approvedAt: null, daysLeft: null, media: [] } as never;
+    expect(toPreviewPost(base, { forClient: true }).title).toBeNull();
+    expect(JSON.stringify(toPreviewPost(base, { forClient: true }))).not.toContain("cliente pediu");
+    expect(toPreviewPost(base, { forClient: true }).caption).toBe("Legenda pública");
+    expect(toPreviewPost(base).title).toBe("v3 — cliente pediu mais claro, de novo");
+  });
+
+  it("grid badges are short enough for the cell (no cut-off labels)", () => {
+    expect(gridBadge("ajuste_pedido", "client")).toBe("Ajuste");
+    expect(gridBadge("em_aprovacao", "client")).toBe("Para aprovar");
+    expect(gridBadge("agendado", "client")).toBe("Aprovado");
+    expect(gridBadge("publicado", "client")).toBe("Aprovado");
+    expect(gridBadge("ajuste_pedido", "staff")).toBe("Ajuste");
+    expect(gridBadge("agendado", "staff")).toBe("Agendado");
+    expect(gridBadge("rascunho", "staff")).toBe("Rascunho");
+    for (const status of Object.keys(STATUS_LABEL)) expect(gridBadge(status, "staff").length, status).toBeLessThanOrEqual(12);
+  });
+
   it("toPreviewPost turns dates into ISO strings and keeps the media order", () => {
     const d = new Date("2026-11-10T12:00:00Z");
     const out = toPreviewPost({

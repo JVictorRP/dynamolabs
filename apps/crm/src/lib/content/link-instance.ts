@@ -1,7 +1,9 @@
 import "server-only";
 import { createRateLimiter } from "../rate-limit";
+import { LINK_LIMITS } from "./limits";
 
-/** Limites por IP em memória: 300 requisições de página e arquivos e 20 decisões a cada 10 minutos. */
-const WINDOW_MS = 10 * 60_000;
-export const fileLimiter = createRateLimiter({ windowMs: WINDOW_MS, max: 300, now: Date.now });
-export const decisionLimiter = createRateLimiter({ windowMs: WINDOW_MS, max: 20, now: Date.now });
+/** Limites por IP em memória (uma instância do CRM): páginas, arquivos e decisões têm faixas separadas. */
+const make = (max: number) => createRateLimiter({ windowMs: LINK_LIMITS.windowMs, max, now: Date.now });
+export const pageLimiter = make(LINK_LIMITS.pages);
+export const fileLimiter = make(LINK_LIMITS.files);
+export const decisionLimiter = make(LINK_LIMITS.decisions);
