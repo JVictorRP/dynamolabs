@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState, useTransition } from "react";
+import { useActionState, useState, useTransition } from "react";
+import { useKeepValues } from "@/components/use-keep-values";
 import { CtaButton, GhostButton } from "@/components/ui";
 import {
   addSheetAction,
@@ -17,24 +18,6 @@ import {
 export const field =
   "mt-2 w-full rounded-[8px] border border-graphite bg-panel px-4 py-3 text-base text-white outline-none transition focus:border-teal";
 
-/**
- * Envio sem o reset automático do React 19: em erro, o que a pessoa digitou continua no formulário.
- * Com `resetOnSuccess`, limpa só quando deu certo.
- */
-function useKeepValues(dispatch: (fd: FormData) => void, state: ActionState, resetOnSuccess = false) {
-  const ref = useRef<HTMLFormElement>(null);
-  const [, start] = useTransition();
-  useEffect(() => {
-    if (resetOnSuccess && state?.ok) ref.current?.reset();
-  }, [state, resetOnSuccess]);
-  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    start(() => dispatch(fd));
-  };
-  return { ref, onSubmit };
-}
-
 function Feedback({ state }: { state: ActionState }) {
   if (!state) return null;
   return state.ok ? (
@@ -46,12 +29,12 @@ function Feedback({ state }: { state: ActionState }) {
 
 export function ManualReplyForm({ conversationId, allowed }: { conversationId: string; allowed: boolean }) {
   const [state, action, pending] = useActionState(manualReplyAction, null);
-  const form = useKeepValues(action, state, true);
+  const { formRef, onSubmit } = useKeepValues(action, state, true);
   if (!allowed) {
     return <p className="text-sm text-gray-300">Passaram mais de 24 h desde a última mensagem do cliente. Pela regra da Meta, só dá para responder depois que ele escrever de novo.</p>;
   }
   return (
-    <form ref={form.ref} onSubmit={form.onSubmit} className="space-y-3">
+    <form ref={formRef} onSubmit={onSubmit} className="space-y-3">
       <input type="hidden" name="conversationId" value={conversationId} />
       <textarea name="text" rows={3} required className={field} placeholder="Responder como atendente…" />
       <Feedback state={state} />
@@ -124,9 +107,9 @@ export function StyleUpload() {
 
 export function GuideEditor({ value }: { value: string }) {
   const [state, action, pending] = useActionState(saveStyleGuideAction, null);
-  const form = useKeepValues(action, state);
+  const { formRef, onSubmit } = useKeepValues(action, state);
   return (
-    <form ref={form.ref} onSubmit={form.onSubmit} className="space-y-3">
+    <form ref={formRef} onSubmit={onSubmit} className="space-y-3">
       <textarea name="styleGuide" rows={12} defaultValue={value} className={`${field} font-mono text-sm`} placeholder="Ex.: Tom leve e próximo. Frases curtas. No máximo um emoji. Trata por você…" />
       <Feedback state={state} />
       <CtaButton type="submit" disabled={pending}>{pending ? "Salvando…" : "Salvar guia"}</CtaButton>
@@ -146,9 +129,9 @@ export function GenerateGuideButton({ disabled }: { disabled: boolean }) {
 
 export function AddSheetForm() {
   const [state, action, pending] = useActionState(addSheetAction, null);
-  const form = useKeepValues(action, state, true);
+  const { formRef, onSubmit } = useKeepValues(action, state, true);
   return (
-    <form ref={form.ref} onSubmit={form.onSubmit} className="grid gap-4 md:grid-cols-[2fr_1fr_1fr_auto] md:items-end">
+    <form ref={formRef} onSubmit={onSubmit} className="grid gap-4 md:grid-cols-[2fr_1fr_1fr_auto] md:items-end">
       <label className="block">
         <span className="footer-line">Link da planilha</span>
         <input name="url" required className={field} placeholder="https://docs.google.com/spreadsheets/d/…" />
@@ -186,9 +169,9 @@ const ACTION_LABELS: [keyof AutomationValues["actions"], string, string][] = [
 
 export function AutomationsForm({ values }: { values: AutomationValues }) {
   const [state, action, pending] = useActionState(saveAutomationsAction, null);
-  const form = useKeepValues(action, state);
+  const { formRef, onSubmit } = useKeepValues(action, state);
   return (
-    <form ref={form.ref} onSubmit={form.onSubmit} className="space-y-8">
+    <form ref={formRef} onSubmit={onSubmit} className="space-y-8">
       <fieldset className="space-y-4">
         {ACTION_LABELS.map(([key, label, hint]) => (
           <label key={key} className="flex items-start gap-3">
@@ -237,9 +220,9 @@ export function AutomationsForm({ values }: { values: AutomationValues }) {
 
 export function SimulatorForm() {
   const [state, action, pending] = useActionState(simulateAction, null);
-  const form = useKeepValues(action, state, true);
+  const { formRef, onSubmit } = useKeepValues(action, state, true);
   return (
-    <form ref={form.ref} onSubmit={form.onSubmit} className="flex flex-col gap-3 md:flex-row md:items-start">
+    <form ref={formRef} onSubmit={onSubmit} className="flex flex-col gap-3 md:flex-row md:items-start">
       <input name="text" required autoComplete="off" className={`${field} !mt-0 flex-1`} placeholder="Escreva como se fosse um cliente…" />
       <CtaButton type="submit" disabled={pending}>{pending ? "Pensando…" : "Enviar"}</CtaButton>
       <div className="md:hidden"><Feedback state={state} /></div>

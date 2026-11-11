@@ -21,3 +21,4 @@ export * from "./brain/prompt";
 export * from "./brain/respond";
 export * from "./brain/style-guide";
 export * from "./panel";
+export * from "./admin";
