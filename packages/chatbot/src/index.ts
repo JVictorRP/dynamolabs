@@ -8,3 +8,6 @@ export * from "./style/parse-export";
 export * from "./style/anonymize";
 export * from "./style/examples";
 export * from "./style/import";
+export * from "./sheets/fetcher";
+export * from "./sheets/sync";
+export * from "./sheets/search";
