@@ -10,6 +10,8 @@ import type { CreateMessage } from "./llm";
 import { buildMessages, buildSystem, findExamples } from "./prompt";
 
 export const MAX_TOOL_ROUNDS = 6;
+/** Ações com efeito fora do banco do bot: numa nova tentativa do mesmo job, não rodam de novo. */
+const SIDE_EFFECT_TOOLS = new Set(["passar_humano", "avisar_responsavel", "enviar_n8n"]);
 
 export type Reply = {
   text: string | null;
@@ -29,6 +31,12 @@ export type RespondDeps = {
   testMode: boolean;
   notify: ToolContext["notify"];
   fetch: typeof fetch;
+  /** Job em execução (chave de idempotência das ações). */
+  jobId?: string;
+  /** Ações já executadas em tentativas anteriores deste job. */
+  doneTools?: string[];
+  /** Chamado depois de cada ação com efeito concluída, para guardar no job. */
+  onToolDone?: (key: string) => Promise<void>;
 };
 
 /** Gera a resposta do bot para a conversa (sem enviar nada ao WhatsApp). */
@@ -76,6 +84,7 @@ export async function respond(deps: RespondDeps): Promise<Reply> {
     return result;
   };
 
+  const done = new Set(deps.doneTools ?? []);
   for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
     const response = await deps.createMessage({
       model,
@@ -109,9 +118,19 @@ export async function respond(deps: RespondDeps): Promise<Reply> {
     const results = await Promise.all(
       uses.map(async (use): Promise<Anthropic.ToolResultBlockParam> => {
         const tool = byName.get(use.name);
+        const key = `${use.name}:${JSON.stringify(use.input)}`;
+        const sideEffect = SIDE_EFFECT_TOOLS.has(use.name);
         try {
           if (!tool) throw new Error(`Ferramenta desconhecida: ${use.name}`);
-          return { type: "tool_result", tool_use_id: use.id, content: await tool.run(use.input, ctx) };
+          if (sideEffect && done.has(key)) {
+            return { type: "tool_result", tool_use_id: use.id, content: "Esta ação já foi executada para esta mensagem." };
+          }
+          const content = await tool.run(use.input, { ...ctx, idempotencyKey: deps.jobId ? `${deps.jobId}:${key}` : undefined });
+          if (sideEffect && !deps.testMode) {
+            done.add(key);
+            await deps.onToolDone?.(key);
+          }
+          return { type: "tool_result", tool_use_id: use.id, content };
         } catch (e) {
           return { type: "tool_result", tool_use_id: use.id, content: (e as Error).message, is_error: true };
         }

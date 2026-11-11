@@ -65,6 +65,17 @@ async function reply(deps: JobDeps, job: BotJob) {
   const sender = await conversationSender(deps, organizationId, conversationId);
   if (!sender) return;
   const { conv, creds, notify } = sender;
+
+  // Tentativa anterior já entregou a resposta: só falta registrar (nunca reenviar).
+  const sent = job.payload.sent as { text: string; wamid: string } | undefined;
+  if (sent) {
+    const [already] = await db.select({ id: schema.message.id }).from(schema.message).where(eq(schema.message.wamid, sent.wamid));
+    if (!already) await recordOutgoing(db, organizationId, conversationId, { author: "bot", text: sent.text, wamid: sent.wamid });
+    await markAnswered(db, organizationId, conversationId, (await unanswered(db, organizationId, conversationId)).map((m) => m.id));
+    return;
+  }
+  const payload: Record<string, unknown> = { ...job.payload };
+  const savePayload = () => db.update(schema.botJob).set({ payload }).where(eq(schema.botJob.id, job.id));
   const config = await getConfig(db, organizationId);
   if (!config.enabled) return;
   if (conv.mode === "humano") {
@@ -103,13 +114,31 @@ async function reply(deps: JobDeps, job: BotJob) {
     return;
   }
 
-  const r = await respond({ db, createMessage: deps.createMessage, organizationId, conversationId, testMode: false, notify, fetch: deps.fetch });
+  const doneTools = Array.isArray(payload.doneTools) ? (payload.doneTools as string[]) : [];
+  const r = await respond({
+    db,
+    createMessage: deps.createMessage,
+    organizationId,
+    conversationId,
+    testMode: false,
+    notify,
+    fetch: deps.fetch,
+    jobId: job.id,
+    doneTools,
+    onToolDone: async (key) => {
+      payload.doneTools = [...doneTools, key];
+      doneTools.push(key);
+      await savePayload();
+    },
+  });
   let text = r.text;
   if (!text) {
     text = MSG_JA_RESPONDO;
     await handOff(ctx, "a IA não gerou resposta");
   }
   const { wamid } = await deps.whatsapp.sendText(creds, conv.waId, text);
+  payload.sent = { text, wamid };
+  await savePayload();
   if (last.wamid) await deps.whatsapp.markRead(creds, last.wamid).catch(() => {});
   await recordOutgoing(db, organizationId, conversationId, { author: "bot", text, wamid, usage: r.usage, costUsd: r.costUsd, toolCalls: r.toolCalls });
   await markAnswered(db, organizationId, conversationId, r.answeredIds.length ? r.answeredIds : pendingIds);

@@ -14,6 +14,8 @@ export type ToolContext = {
   testMode: boolean;
   notify: (to: string, text: string) => Promise<void>;
   fetch: typeof fetch;
+  /** Chave estável por job + ação: o n8n pode usar para ignorar repetições. */
+  idempotencyKey?: string;
 };
 
 export type BotTool = {

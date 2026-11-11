@@ -190,3 +190,47 @@ describe("reapStaleJobs (review critical 2)", () => {
     expect(conv.mode).toBe("humano");
   });
 });
+
+describe("retries do not repeat side effects (review important 4)", () => {
+  it("fires the n8n automation once even when the job is retried", async () => {
+    const { org, job } = await incomingJob("Idem");
+    await db.update(schema.botConfig).set({ actions: { registrar_lead: false, passar_humano: true, avisar_responsavel: false, enviar_n8n: true }, n8nWebhookUrl: "https://n8n.x/hook" }).where(eq(schema.botConfig.organizationId, org));
+    const posts: unknown[] = [];
+    const tool = {
+      ...textReply(""),
+      content: [{ type: "tool_use", id: "tu_1", name: "enviar_n8n", input: { evento: "reserva", dados: "4 pessoas" } }],
+      stop_reason: "tool_use",
+    } as unknown as ReturnType<typeof textReply>;
+    const script = [async () => tool, async () => { throw new Error("IA caiu no meio"); }, async () => tool, async () => textReply("Reserva enviada!")];
+    let i = 0;
+    const d = deps({
+      createMessage: async () => script[i++](),
+      fetch: (async (_url: string, init: RequestInit) => {
+        posts.push(JSON.parse(String(init.body)));
+        return new Response("{}");
+      }) as unknown as typeof fetch,
+    });
+    await runJob(job, d);
+    expect((await db.select().from(schema.botJob).where(eq(schema.botJob.id, job.id)))[0].status).toBe("pending");
+    await db.update(schema.botJob).set({ runAfter: new Date(Date.now() - 1000) }).where(eq(schema.botJob.id, job.id));
+    const [again] = await db.select().from(schema.botJob).where(eq(schema.botJob.id, job.id));
+    await db.update(schema.botJob).set({ status: "running", attempts: again.attempts + 1 }).where(eq(schema.botJob.id, job.id));
+    await runJob({ ...again, status: "running", attempts: again.attempts + 1 }, d);
+    expect(posts).toHaveLength(1);
+    expect(posts[0]).toMatchObject({ evento: "reserva", idempotencyKey: expect.stringContaining(job.id) });
+    expect(d.wa.sent.filter((s) => s.to === "5527900002222").map((s) => s.body)).toEqual(["Reserva enviada!"]);
+  });
+
+  it("does not resend a reply already delivered before the failure", async () => {
+    const { conversationId, job } = await incomingJob("JaEnviado");
+    await db.update(schema.botJob).set({ payload: { sent: { text: "Temos sim!", wamid: "wamid.ja.1" } } }).where(eq(schema.botJob.id, job.id));
+    const [row] = await db.select().from(schema.botJob).where(eq(schema.botJob.id, job.id));
+    const llm = fakeLlm(async () => textReply("não deveria"));
+    const d = deps({ createMessage: llm.create });
+    await runJob(row, d);
+    expect(llm.calls).toHaveLength(0);
+    expect(d.wa.sent).toEqual([]);
+    const out = await outgoing(conversationId);
+    expect(out.map((m) => [m.text, m.wamid])).toEqual([["Temos sim!", "wamid.ja.1"]]);
+  });
+});

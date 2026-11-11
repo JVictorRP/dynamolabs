@@ -16,7 +16,14 @@ export const enviarN8n = defineTool({
     const res = await ctx.fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ organizationId: ctx.organizationId, conversationId: ctx.conversationId, waId: ctx.waId, evento, dados }),
+      body: JSON.stringify({
+        organizationId: ctx.organizationId,
+        conversationId: ctx.conversationId,
+        waId: ctx.waId,
+        evento,
+        dados,
+        ...(ctx.idempotencyKey ? { idempotencyKey: ctx.idempotencyKey } : {}),
+      }),
       signal: AbortSignal.timeout(10_000),
     });
     if (res.status >= 400) throw new Error(`O n8n respondeu ${res.status}.`);
