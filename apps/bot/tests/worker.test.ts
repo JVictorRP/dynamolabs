@@ -234,3 +234,30 @@ describe("retries do not repeat side effects (review important 4)", () => {
     expect(out.map((m) => [m.text, m.wamid])).toEqual([["Temos sim!", "wamid.ja.1"]]);
   });
 });
+
+describe("broken number (review important 5)", () => {
+  it("postpones replies while the number has a problem and answers after it is relinked", async () => {
+    const { phoneNumberId, job } = await incomingJob("Quebrado", { bot: { status: "com_problema" } });
+    const d = deps();
+    await runJob(job, d);
+    expect(d.wa.sent).toEqual([]);
+    let [row] = await db.select().from(schema.botJob).where(eq(schema.botJob.id, job.id));
+    expect(row.status).toBe("pending");
+    expect(row.attempts).toBe(0);
+    expect(row.runAfter.getTime() - Date.now()).toBeGreaterThan(9 * 60_000);
+
+    await db.update(schema.whatsappNumber).set({ status: "ativo" }).where(eq(schema.whatsappNumber.phoneNumberId, phoneNumberId));
+    await db.update(schema.botJob).set({ status: "running", attempts: 1 }).where(eq(schema.botJob.id, job.id));
+    [row] = await db.select().from(schema.botJob).where(eq(schema.botJob.id, job.id));
+    await runJob(row, d);
+    expect(d.wa.sent.map((s) => s.body)).toEqual(["Temos sim! 😊"]);
+  });
+
+  it("gives up after 24 h, when Meta no longer allows a free reply", async () => {
+    const { conversationId, job } = await incomingJob("QuebradoVelho", { bot: { status: "com_problema" } });
+    await db.update(schema.conversation).set({ lastCustomerAt: new Date(Date.now() - 25 * 3600_000) }).where(eq(schema.conversation.id, conversationId));
+    await runJob(job, deps());
+    const [row] = await db.select().from(schema.botJob).where(eq(schema.botJob.id, job.id));
+    expect(row.status).toBe("failed");
+  });
+});

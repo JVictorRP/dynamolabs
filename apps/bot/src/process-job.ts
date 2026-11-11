@@ -38,6 +38,8 @@ export type JobDeps = {
 };
 
 export class PermanentJobError extends Error {}
+/** O número da empresa está "com problema" (token vencido): a resposta espera o número ser religado. */
+export class NumberUnavailableError extends Error {}
 
 const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -62,6 +64,8 @@ async function reply(deps: JobDeps, job: BotJob) {
   const organizationId = job.organizationId;
   const conversationId = job.conversationId!;
   const now = deps.now();
+  const [number] = await db.select({ status: schema.whatsappNumber.status }).from(schema.whatsappNumber).where(eq(schema.whatsappNumber.organizationId, organizationId));
+  if (number?.status === "com_problema") throw new NumberUnavailableError("número de WhatsApp com problema; aguardando ser religado");
   const sender = await conversationSender(deps, organizationId, conversationId);
   if (!sender) return;
   const { conv, creds, notify } = sender;

@@ -6,6 +6,9 @@ import {
   claimJob,
   completeJob,
   failJob,
+  canReplyManually,
+  getConversationRow,
+  postponeJob,
   recoverStaleJobs,
   getConfig,
   handOff,
@@ -13,7 +16,7 @@ import {
   type BotJob,
 } from "@dynamo/chatbot";
 import { schema } from "@dynamo/db";
-import { conversationSender, PermanentJobError, processJob, type JobDeps } from "./process-job";
+import { conversationSender, NumberUnavailableError, PermanentJobError, processJob, type JobDeps } from "./process-job";
 
 export type { JobDeps } from "./process-job";
 
@@ -61,6 +64,12 @@ export async function runJob(job: BotJob, deps: JobDeps): Promise<void> {
       return failNow(deps, job, message);
     }
     if (e instanceof PermanentJobError) return failNow(deps, job, message);
+    if (e instanceof NumberUnavailableError && job.conversationId) {
+      const conv = await getConversationRow(deps.db, job.organizationId, job.conversationId);
+      // Passadas 24 h da última mensagem do cliente, a Meta não permite mais responder livremente.
+      if (!conv || !canReplyManually(conv, deps.now())) return failNow(deps, job, `${message}; passou a janela de 24 h`);
+      return postponeJob(deps.db, job.id, 10, message);
+    }
     console.error(`Job ${job.kind} ${job.id} falhou (tentativa ${job.attempts}):`, message);
     if ((await failJob(deps.db, job.id, message)) === "failed") await finalFallback(deps, job);
   }

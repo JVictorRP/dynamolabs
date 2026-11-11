@@ -108,3 +108,21 @@ export async function recoverStaleJobs(db: Db, minutes = LEASE_MINUTES): Promise
   }
   return { requeued, failed };
 }
+
+/** Adia um job sem gastar tentativa (ex.: número da empresa fora do ar até ser religado). */
+export async function postponeJob(db: Db, id: string, minutes: number, reason: string): Promise<void> {
+  try {
+    await db
+      .update(schema.botJob)
+      .set({
+        status: "pending",
+        lastError: reason.slice(0, 1000),
+        attempts: sql`greatest(${schema.botJob.attempts} - 1, 0)`,
+        runAfter: sql`now() + make_interval(mins => ${minutes})`,
+        updatedAt: new Date(),
+      })
+      .where(eq(schema.botJob.id, id));
+  } catch {
+    await db.update(schema.botJob).set({ status: "done", lastError: `${reason} (coberto por job mais novo)`, updatedAt: new Date() }).where(eq(schema.botJob.id, id));
+  }
+}
