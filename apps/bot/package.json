@@ -1,0 +1,27 @@
+{
+  "name": "bot",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "node build.mjs",
+    "start": "node dist/server.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0",
+    "@dynamo/chatbot": "workspace:*",
+    "@dynamo/db": "workspace:*",
+    "drizzle-orm": "^0.45.4"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.3.0",
+    "@types/node": "^20",
+    "esbuild": "^0.25.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5",
+    "vitest": "^3"
+  }
+}

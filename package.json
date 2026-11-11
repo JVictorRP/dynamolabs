@@ -9,6 +9,9 @@
     "db:migrate": "pnpm --filter crm db:migrate",
     "dev:site": "pnpm --filter site dev",
     "build:site": "pnpm --filter site build",
-    "test:site": "pnpm --filter site test"
+    "test:site": "pnpm --filter site test",
+    "dev:bot": "pnpm --filter bot dev",
+    "build:bot": "pnpm --filter bot build",
+    "test:bot": "pnpm --filter @dynamo/db test && pnpm --filter @dynamo/chatbot test && pnpm --filter bot test"
   }
 }
