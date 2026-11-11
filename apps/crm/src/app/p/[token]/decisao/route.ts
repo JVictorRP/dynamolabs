@@ -1,4 +1,5 @@
 import { handleLinkDecision } from "@/lib/content/link";
+import { onContentEvent } from "@/lib/content/hooks";
 import { decisionLimiter } from "@/lib/content/link-instance";
 import { clientIp } from "@/lib/rate-limit";
 import { db } from "@/lib/db";
@@ -18,5 +19,5 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
   } catch {
     body = null;
   }
-  return handleLinkDecision({ db, limiter: decisionLimiter, now: () => new Date() }, { token, ip: clientIp(request.headers), body });
+  return handleLinkDecision({ db, limiter: decisionLimiter, now: () => new Date(), onEvent: onContentEvent }, { token, ip: clientIp(request.headers), body });
 }
