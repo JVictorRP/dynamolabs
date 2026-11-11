@@ -56,6 +56,7 @@ async function seedDemo(organizationId: string, stageIds: string[]) {
         organizationId,
         format: (["feed", "carrossel", "reels"] as const)[i % 3],
         status: statuses[Math.min(i, statuses.length - 1)],
+        approvedAt: (["aprovado", "agendado", "publicado"] as string[]).includes(statuses[Math.min(i, statuses.length - 1)]) ? today : null,
         title: `Post ${i + 1}`,
         caption: `Legenda de exemplo do post ${i + 1}.`,
         scheduledAt: when,
