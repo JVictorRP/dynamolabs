@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import { claimJob, recordIncoming, scheduleReply, WhatsAppAuthError, WhatsAppTemporaryError, MSG_JA_RESPONDO, MSG_NAO_TEXTO, setHumanMode, recordOutgoing } from "@dynamo/chatbot";
 import { schema, type Db } from "@dynamo/db";
 import { createTestDb } from "@dynamo/db/testing";
@@ -142,5 +142,38 @@ describe("purgeOldMessages", () => {
     expect(deleted).toBeGreaterThanOrEqual(1);
     const left = await db.select().from(schema.message).where(eq(schema.message.conversationId, conversationId));
     expect(left.map((m) => m.text)).toEqual(["tem bacalhau?"]);
+  });
+});
+
+describe("burst during a reply (review critical 1)", () => {
+  it("answers a message that arrives while the previous reply is being generated", async () => {
+    const { org, phoneNumberId, conversationId, job } = await incomingJob("Rajada", { text: "oi" });
+    let calls = 0;
+    const seen: unknown[] = [];
+    const d = deps({
+      createMessage: async (params) => {
+        calls += 1;
+        seen.push(structuredClone(params.messages));
+        if (calls === 1) {
+          // O cliente manda a segunda mensagem enquanto o bot pensa na primeira.
+          await recordIncoming(db, org, { phoneNumberId, waId: "5527900002222", contactName: "Bia", wamid: "wamid.rajada.2", type: "text", text: "quanto custa o bacalhau?", timestamp: new Date() });
+          await scheduleReply(db, org, conversationId, 0);
+          return textReply("Oi! Tudo bem?");
+        }
+        return textReply("O bacalhau sai por R$ 89.");
+      },
+    });
+    await runJob(job, d);
+    await db.update(schema.botJob).set({ status: "done" }).where(and(eq(schema.botJob.status, "pending"), ne(schema.botJob.conversationId, conversationId)));
+    await db.update(schema.botJob).set({ runAfter: new Date(Date.now() - 1000) }).where(eq(schema.botJob.status, "pending"));
+    const second = await claimJob(db);
+    expect(second?.conversationId).toBe(conversationId);
+    await runJob(second!, d);
+    expect(d.wa.sent.map((s) => s.body)).toEqual(["Oi! Tudo bem?", "O bacalhau sai por R$ 89."]);
+    const last = (seen[1] as { role: string; content: unknown }[]).at(-1)!;
+    expect(last.role).toBe("user");
+    expect(JSON.stringify(last.content)).toContain("quanto custa o bacalhau?");
+    const msgs = await db.select().from(schema.message).where(eq(schema.message.conversationId, conversationId));
+    expect(msgs).toHaveLength(4);
   });
 });

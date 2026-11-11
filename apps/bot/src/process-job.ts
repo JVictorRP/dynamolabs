@@ -8,7 +8,8 @@ import {
   getConfig,
   getConversationRow,
   handOff,
-  history,
+  markAnswered,
+  unanswered,
   isHumanMode,
   monthKey,
   monthSpendBrl,
@@ -71,15 +72,17 @@ async function reply(deps: JobDeps, job: BotJob) {
     await releaseToBot(db, organizationId, conversationId);
   }
 
-  const hist = await history(db, organizationId, conversationId, 1);
-  const last = hist[0];
-  if (!last || last.author !== "cliente") return;
+  const pending = await unanswered(db, organizationId, conversationId);
+  const last = pending[pending.length - 1];
+  if (!last) return;
+  const pendingIds = pending.map((m) => m.id);
   const ctx = { db, organizationId, conversationId, waId: conv.waId, contactName: conv.contactName, config, testMode: false, notify, fetch: deps.fetch };
 
   if (last.type !== "text" || !last.text) {
     if (config.nonTextPolicy === "humano") return handOff(ctx, `mandou ${last.type === "audio" ? "um áudio" : "uma mídia"}`);
     const { wamid } = await deps.whatsapp.sendText(creds, conv.waId, MSG_NAO_TEXTO);
     await recordOutgoing(db, organizationId, conversationId, { author: "bot", text: MSG_NAO_TEXTO, wamid });
+    await markAnswered(db, organizationId, conversationId, pendingIds);
     return;
   }
 
@@ -109,6 +112,7 @@ async function reply(deps: JobDeps, job: BotJob) {
   const { wamid } = await deps.whatsapp.sendText(creds, conv.waId, text);
   if (last.wamid) await deps.whatsapp.markRead(creds, last.wamid).catch(() => {});
   await recordOutgoing(db, organizationId, conversationId, { author: "bot", text, wamid, usage: r.usage, costUsd: r.costUsd, toolCalls: r.toolCalls });
+  await markAnswered(db, organizationId, conversationId, r.answeredIds.length ? r.answeredIds : pendingIds);
 }
 
 export async function processJob(job: BotJob, deps: JobDeps): Promise<void> {

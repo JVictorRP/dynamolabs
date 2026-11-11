@@ -4,7 +4,7 @@ import { schema, type Db } from "@dynamo/db";
 import type { CreateMessage } from "./brain/llm";
 import { respond, type Reply } from "./brain/respond";
 import { getConfig, updateConfig, type BotConfig } from "./config";
-import { ensureConversation, getConversationRow, history, recordIncoming, recordOutgoing, type Conversation, type Message } from "./conversations";
+import { ensureConversation, getConversationRow, history, markAnswered, recordIncoming, recordOutgoing, type Conversation, type Message } from "./conversations";
 import { decrypt } from "./crypto";
 import { enqueue } from "./queue";
 import { canReplyManually, dayRange, monthRange, monthSpendBrl, releaseToBot } from "./rules";
@@ -121,6 +121,7 @@ export async function simulate(
     costUsd: reply.costUsd,
     toolCalls: reply.toolCalls,
   });
+  await markAnswered(db, organizationId, conversationId, reply.answeredIds);
   return { reply, transcript: await history(db, organizationId, conversationId, 100) };
 }
 

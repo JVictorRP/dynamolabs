@@ -224,6 +224,8 @@ export const message = pgTable(
     outputTokens: integer("output_tokens").notNull().default(0),
     costUsd: numeric("cost_usd", { precision: 12, scale: 6 }).notNull().default("0"),
     toolCalls: jsonb("tool_calls").$type<{ name: string; input: unknown; ok: boolean }[]>(),
+    /** Mensagens do cliente: quando entraram numa resposta (do bot ou da equipe). Null = ainda sem resposta. */
+    answeredAt: timestamp("answered_at", { withTimezone: true }),
     createdAt: createdAt(),
   },
   (t) => [

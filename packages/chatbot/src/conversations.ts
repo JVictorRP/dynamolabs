@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { schema, type Db } from "@dynamo/db";
 import type { IncomingMessage } from "./whatsapp/webhook-payload";
 
@@ -83,6 +83,49 @@ export async function recordOutgoing(
     toolCalls: m.toolCalls ?? null,
   });
   await db.update(schema.conversation).set({ updatedAt: new Date() }).where(eq(schema.conversation.id, conversationId));
+  // Resposta da equipe cobre tudo o que o cliente mandou até aqui.
+  if (m.author === "humano") await markAllAnswered(db, organizationId, conversationId);
+}
+
+/** Marca mensagens do cliente como respondidas (só as que entraram na resposta). */
+export async function markAnswered(db: Db, organizationId: string, conversationId: string, ids: string[]): Promise<void> {
+  if (ids.length === 0) return;
+  await db
+    .update(schema.message)
+    .set({ answeredAt: new Date() })
+    .where(and(eq(schema.message.organizationId, organizationId), eq(schema.message.conversationId, conversationId), inArray(schema.message.id, ids)));
+}
+
+export async function markAllAnswered(db: Db, organizationId: string, conversationId: string): Promise<void> {
+  await db
+    .update(schema.message)
+    .set({ answeredAt: new Date() })
+    .where(
+      and(
+        eq(schema.message.organizationId, organizationId),
+        eq(schema.message.conversationId, conversationId),
+        eq(schema.message.direction, "in"),
+        isNull(schema.message.answeredAt),
+      ),
+    );
+}
+
+/** Mensagens do cliente ainda sem resposta, da mais antiga para a mais nova. */
+export async function unanswered(db: Db, organizationId: string, conversationId: string, limit = 20): Promise<Message[]> {
+  const rows = await db
+    .select()
+    .from(schema.message)
+    .where(
+      and(
+        eq(schema.message.organizationId, organizationId),
+        eq(schema.message.conversationId, conversationId),
+        eq(schema.message.direction, "in"),
+        isNull(schema.message.answeredAt),
+      ),
+    )
+    .orderBy(desc(schema.message.createdAt), desc(schema.message.id))
+    .limit(limit);
+  return rows.reverse();
 }
 
 export async function getConversationRow(db: Db, organizationId: string, conversationId: string): Promise<Conversation | null> {

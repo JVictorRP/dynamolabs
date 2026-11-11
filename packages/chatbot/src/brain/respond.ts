@@ -17,6 +17,8 @@ export type Reply = {
   usage: UsageTotals;
   costUsd: number;
   toolCalls: ToolCallRecord[];
+  /** Mensagens do cliente que entraram nesta resposta (marcar como respondidas depois de enviar). */
+  answeredIds: string[];
 };
 
 export type RespondDeps = {
@@ -33,14 +35,19 @@ export type RespondDeps = {
 export async function respond(deps: RespondDeps): Promise<Reply> {
   const { db, organizationId, conversationId } = deps;
   const usage: UsageTotals = { input: 0, cached: 0, cacheWrite: 0, output: 0 };
-  const result: Reply = { text: null, handoff: false, usage, costUsd: 0, toolCalls: [] };
+  const result: Reply = { text: null, handoff: false, usage, costUsd: 0, toolCalls: [], answeredIds: [] };
 
   const conv = await getConversationRow(db, organizationId, conversationId);
   if (!conv) throw new Error("Conversa não encontrada nesta empresa.");
   const config = await getConfig(db, organizationId);
   const [org] = await db.select({ name: schema.organization.name }).from(schema.organization).where(eq(schema.organization.id, organizationId));
   const hist = await history(db, organizationId, conversationId, 20);
-  if (hist.length === 0 || hist[hist.length - 1].author !== "cliente") return result;
+  // Sem mensagem do cliente pendente, não há o que responder. As pendentes vão por último,
+  // depois de respostas que foram gravadas enquanto elas chegavam.
+  const pending = hist.filter((m) => m.direction === "in" && !m.answeredAt);
+  if (pending.length === 0) return result;
+  hist.splice(0, hist.length, ...hist.filter((m) => !pending.includes(m)), ...pending);
+  result.answeredIds = pending.map((m) => m.id);
 
   const lastText = [...hist].reverse().find((m) => m.author === "cliente" && m.text)?.text ?? "";
   const messages = buildMessages(hist, await findExamples(db, organizationId, lastText));

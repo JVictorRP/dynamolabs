@@ -1,5 +1,6 @@
 import { and, eq, gte, lt, sql } from "drizzle-orm";
 import { schema, type Db } from "@dynamo/db";
+import { markAllAnswered } from "./conversations";
 
 const HOUR = 3600_000;
 const SP_OFFSET_HOURS = 3; // America/Sao_Paulo = UTC−3 (sem horário de verão desde 2019)
@@ -52,6 +53,8 @@ export async function setHumanMode(db: Db, organizationId: string, conversationI
 }
 
 export async function releaseToBot(db: Db, organizationId: string, conversationId: string): Promise<void> {
+  // O que chegou durante o atendimento humano fica com a equipe: o bot volta só para mensagens novas.
+  await markAllAnswered(db, organizationId, conversationId);
   await db
     .update(schema.conversation)
     .set({ mode: "bot", handoffUntil: null, updatedAt: new Date() })
