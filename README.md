@@ -18,6 +18,8 @@ Pacotes compartilhados: `packages/db` (esquema do banco, usado pelo CRM e pelo b
 - [Como o n8n envia dados para o CRM](docs/N8N-INTEGRACAO.md)
 - [Colocar no ar no VPS](docs/VPS-SETUP.md)
 - [Deploy do chatbot de WhatsApp](deploy/bot/README.md)
+- [Conteúdo e prévia para o cliente (volume e e-mail)](docs/VPS-SETUP.md#41-conteúdo-e-prévia-para-o-cliente-volume-e-e-mail-de-avisos)
+- [Especificação do conteúdo e prévia](docs/superpowers/specs/2026-11-11-conteudo-previa-design.md)
 - [Especificação do chatbot](docs/superpowers/specs/2026-11-10-whatsapp-chatbot-design.md)
 
 ## Rodar no computador (desenvolvimento)

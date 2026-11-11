@@ -11,6 +11,7 @@ import {
   applyStyleGuideDraft,
   getConversation,
   listConversations,
+  listSheetSources,
   ManualReplyWindowError,
   overview,
   sendManualReply,
@@ -105,5 +106,21 @@ describe("panel", () => {
     await updateConfig(db, org, { styleGuide: "antigo", styleGuideDraft: "novo" });
     const c = await applyStyleGuideDraft(db, org);
     expect(c).toMatchObject({ styleGuide: "novo", styleGuideDraft: null });
+  });
+});
+
+describe("panel subqueries", () => {
+  it("shows the last message of each conversation and the row count of each sheet", async () => {
+    const org = await seedOrg(db, "Subconsulta");
+    const { conversationId } = await recordIncoming(db, org, incoming({ waId: "30", text: "primeira" }));
+    await recordIncoming(db, org, incoming({ waId: "30", text: "última", timestamp: new Date(Date.now() + 1000) }));
+    const [row] = await listConversations(db, org, {});
+    expect(row.id).toBe(conversationId);
+    expect(row.lastText).toBe("última");
+
+    const s = await addSheetSource(db, org, { url: "https://docs.google.com/spreadsheets/d/XYZ/edit", tab: "A", label: "A" });
+    await db.insert(schema.sheetRow).values([0, 1, 2].map((position) => ({ organizationId: org, sourceId: s.id, position, data: { a: String(position) } })));
+    const sources = await listSheetSources(db, org);
+    expect(sources[0].rows).toBe(3);
   });
 });

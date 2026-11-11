@@ -52,7 +52,12 @@ BETTER_AUTH_URL=https://app.dynamo.business
 BETTER_AUTH_SECRET=COLE_O_SEGREDO_1
 DATABASE_URL=COLE_A_INTERNAL_CONNECTION_URL
 ADMIN_TOKEN=COLE_O_SEGREDO_2
+DYNAMO_STAFF_EMAILS=SEU_EMAIL_DE_LOGIN
+DYNAMO_NOTIFY_EMAILS=EMAILS_QUE_RECEBEM_OS_AVISOS_SEPARADOS_POR_VIRGULA
+RESEND_API_KEY=COLE_A_CHAVE_DO_RESEND
 ```
+
+O `RESEND_API_KEY` e o `DYNAMO_NOTIFY_EMAILS` só são necessários para o e-mail de avisos do conteúdo (seção 4.1). Sem eles o CRM funciona normalmente e o aviso fica só no painel.
 
 Substitua o texto em MAIÚSCULAS pelo valor, sem aspas, espaços ou sinais `< >`.
 
@@ -65,9 +70,34 @@ Abra **https://app.dynamo.business** → tela de login.
 
 **Deploy automático:** em *Source*, ative *Auto Deploy*. Cada atualização enviada ao GitHub publica sozinha.
 
+### 4.1. Conteúdo e prévia para o cliente (volume e e-mail de avisos)
+
+A prévia dos posts guarda as imagens e os vídeos no disco do VPS. Sem o passo 1, o CRM sobe, mas **perde os arquivos a cada novo Deploy**.
+
+**1. Volume para os arquivos** (uma vez)
+- Serviço `crm` → aba **Mounts** → **Add Mount** → tipo **Volume** (não use *Bind* nem *File*).
+- **Name:** `conteudo` · **Mount Path:** `/data`.
+- Clique em **Implantar**. Nos logs do serviço deve aparecer `Arquivos do conteúdo: /data/content (gravação ok).` Se aparecer `ATENÇÃO — A pasta de arquivos do conteúdo ... não aceita gravação`, o volume não foi montado em `/data`.
+- Teste: envie uma imagem em **Clientes → cliente → Conteúdo**, clique em **Implantar** de novo e confira que a imagem continua lá.
+- O volume entra no backup semanal da Hostinger (seção 6), mas não tem backup externo próprio.
+
+**2. E-mail de avisos pelo Resend (grátis)** — opcional
+- Crie a conta em <https://resend.com> e, em **Domains**, adicione o domínio de envio **`mail.dynamo.business`** (um subdomínio, para não mexer em nenhum e-mail do domínio principal).
+- Na Hostinger (DNS de `dynamo.business`), acrescente os registros que o Resend mostrar (SPF, DKIM e, se pedido, MX do subdomínio `mail`) e clique em **Verify** no Resend.
+- Em **API Keys**, crie uma chave e cole em `RESEND_API_KEY`. Em `DYNAMO_NOTIFY_EMAILS`, liste os e-mails da equipe que devem receber os avisos.
+- O plano grátis permite 3.000 e-mails por mês e 100 por dia. O CRM junta os avisos de cada cliente em **um e-mail a cada 10 minutos**, então o volume é pequeno.
+- O remetente é `Dynamo <avisos@mail.dynamo.business>` (mude com `CONTENT_MAIL_FROM`).
+
+**3. Webhook do n8n** — opcional
+- Defina `CONTENT_NOTIFY_WEBHOOK_URL` com a URL (https) de um fluxo do n8n. Cada aprovação ou pedido de ajuste do cliente é enviado como JSON com `event` (`content.aprovado` ou `content.ajuste_pedido`), empresa, post e comentário. Se a URL falhar ou demorar, a decisão do cliente não é afetada.
+
+**Como usar:** em **Clientes → cliente → Conteúdo** a equipe cria o perfil e os posts, envia para aprovação e copia a mensagem pronta com o link. O cliente abre o link no celular, sem login. Três dias depois de aprovado, o post sai do link do cliente e continua com a equipe.
+
 ## 5. Cadastrar clientes
 
-**Jeito mais fácil:** abra **https://app.dynamo.business/admin**, cole o `ADMIN_TOKEN`, preencha empresa, contato, e-mail e senha e clique em *Cadastrar cliente*. A tela mostra o login e a chave do n8n. Marque "dados fictícios" para uma conta de demonstração.
+**Jeito mais fácil:** entre no CRM com um e-mail listado em `DYNAMO_STAFF_EMAILS` e abra **Clientes** no menu (ou **https://app.dynamo.business/clientes**). Lá você cria a empresa com o primeiro acesso, adiciona mais pessoas e gera senha nova para quem esqueceu. A senha é gerada automaticamente e aparece uma única vez, com o botão *Copiar mensagem para o cliente*.
+
+**Primeiro acesso da equipe (sem nenhuma conta ainda):** abra **https://app.dynamo.business/admin**, cole o `ADMIN_TOKEN` e cadastre a empresa da Dynamo com o seu e-mail. Depois use a área Clientes. A tela `/admin` continua servindo para ligar o WhatsApp de um cliente.
 
 **Por API (n8n ou terminal):**
 

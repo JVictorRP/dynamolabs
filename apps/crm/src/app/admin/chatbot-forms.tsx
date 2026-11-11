@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import { CtaButton, GhostButton } from "@/components/ui";
 import { useKeepValues } from "@/components/use-keep-values";
-import { excluirTitularAction, ligarWhatsappAction, statusWhatsappAction, type AdminFormState } from "./actions";
+import { excluirTitularAction, ligarWhatsappAction, resetarSenhaAction, statusWhatsappAction, type AdminFormState } from "./actions";
 
 const field =
   "mt-2 w-full rounded-[8px] border border-graphite bg-panel px-4 py-3 text-base text-white outline-none transition focus:border-teal";
@@ -68,6 +68,19 @@ export function TitularForm() {
       <Field label="Telefone do titular (com DDI e DDD)" name="phone" required placeholder="+55 27 99876-5432" />
       <Result state={state} />
       <CtaButton type="submit" disabled={pending} className="w-full">{pending ? "Apagando…" : "Apagar conversas deste telefone"}</CtaButton>
+    </form>
+  );
+}
+
+export function ResetSenhaForm() {
+  const [state, action, pending] = useActionState(resetarSenhaAction, null);
+  const { formRef, onSubmit } = useKeepValues(action, state, false);
+  return (
+    <form ref={formRef} onSubmit={onSubmit} className="mt-8 space-y-5">
+      <Token />
+      <Field label="E-mail da conta" name="email" type="email" required autoComplete="off" />
+      <Result state={state} />
+      <CtaButton type="submit" disabled={pending} className="w-full">{pending ? "Gerando…" : "Gerar nova senha"}</CtaButton>
     </form>
   );
 }

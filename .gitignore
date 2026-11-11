@@ -16,3 +16,4 @@ tsconfig.tsbuildinfo
 apps/site/src/styles/tokens.css
 apps/site/test-results/
 apps/site/playwright-report/
+.content/

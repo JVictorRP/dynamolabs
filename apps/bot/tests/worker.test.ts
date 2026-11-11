@@ -261,3 +261,18 @@ describe("broken number (review important 5)", () => {
     expect(row.status).toBe("failed");
   });
 });
+
+describe("purgeOldMessages per company", () => {
+  it("applies each company's own retention", async () => {
+    const a = await incomingJob("RetA");
+    const b = await incomingJob("RetB");
+    await db.update(schema.botConfig).set({ retentionMonths: 1 }).where(eq(schema.botConfig.organizationId, a.org));
+    await db.update(schema.botConfig).set({ retentionMonths: 12 }).where(eq(schema.botConfig.organizationId, b.org));
+    const old = new Date(Date.now() - 40 * 86400_000);
+    await db.update(schema.message).set({ createdAt: old }).where(eq(schema.message.conversationId, a.conversationId));
+    await db.update(schema.message).set({ createdAt: old }).where(eq(schema.message.conversationId, b.conversationId));
+    await purgeOldMessages(db, new Date());
+    expect(await db.select().from(schema.message).where(eq(schema.message.conversationId, a.conversationId))).toHaveLength(0);
+    expect(await db.select().from(schema.message).where(eq(schema.message.conversationId, b.conversationId))).toHaveLength(1);
+  });
+});

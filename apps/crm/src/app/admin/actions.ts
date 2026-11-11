@@ -3,6 +3,8 @@
 import { z } from "zod";
 import { adminTokenHint, checkAdminToken, configuredAdminToken } from "@/lib/admin";
 import { AdminError, deleteContactData, linkNumber, setNumberStatus } from "@dynamo/chatbot";
+import { AccountError, resetPasswordByEmail } from "@/lib/accounts";
+import { auth } from "@/lib/auth";
 import { encKey } from "@/lib/chatbot";
 import { db } from "@/lib/db";
 import { createClient, OnboardingError } from "@/lib/onboarding";
@@ -67,7 +69,7 @@ async function guarded(fd: FormData, run: () => Promise<string>): Promise<AdminF
   try {
     return { ok: true, message: await run() };
   } catch (e) {
-    if (e instanceof AdminError) return { ok: false, error: e.message };
+    if (e instanceof AdminError || e instanceof AccountError) return { ok: false, error: e.message };
     console.error(e);
     return { ok: false, error: e instanceof Error ? e.message : "Erro inesperado. Veja os logs do serviço no Easypanel." };
   }
@@ -102,5 +104,12 @@ export async function excluirTitularAction(_prev: AdminFormState, fd: FormData):
   return guarded(fd, async () => {
     const r = await deleteContactData(db, field(fd, "slug"), field(fd, "phone"));
     return `Apagadas ${r.conversations} conversa(s) e ${r.messages} mensagem(ns) desse telefone. O lead no CRM, se houver, continua.`;
+  });
+}
+
+export async function resetarSenhaAction(_prev: AdminFormState, fd: FormData): Promise<AdminFormState> {
+  return guarded(fd, async () => {
+    const r = await resetPasswordByEmail({ db, authContext: await auth.$context }, field(fd, "email"));
+    return `Senha nova de ${r.login}: ${r.senha} — aparece só agora; as sessões abertas foram encerradas.`;
   });
 }

@@ -15,5 +15,6 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!login|sem-acesso|admin|api|_next|favicon.ico).*)"],
+  // /p/... é o link de prévia do cliente: abre sem login (o código do link é a chave).
+  matcher: ["/((?!login|sem-acesso|admin|api|p/|_next|favicon.ico).*)"],
 };

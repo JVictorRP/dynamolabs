@@ -2,89 +2,21 @@
  * Cadastro de cliente: empresa + usuário de acesso + etapas do funil + chave de API do n8n.
  * Usado pelo script `pnpm novo-cliente` e pela rota POST /api/admin/clientes.
  */
-import { createHash, randomBytes } from "node:crypto";
-import { eq } from "drizzle-orm";
+import { AccountError, createClientAccount, type NewClientInput as AccountInput } from "./accounts";
 import { auth } from "./auth";
 import { db, schema } from "./db";
 
-export type NewClientInput = {
-  empresa: string;
-  nome: string;
-  email: string;
-  senha: string;
-  papel?: "owner" | "admin" | "member";
-  demo?: boolean;
-};
+export type NewClientInput = AccountInput;
 
-export class OnboardingError extends Error {}
+/** Mantido para o /admin, o script e a API: erro de cadastro com mensagem para a tela. */
+export { AccountError as OnboardingError };
 
-function slugify(text: string) {
-  return text
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-}
-
+/** Cadastra o cliente. Sem `senha`, gera uma (devolvida em `senha`; null se a pessoa já tinha acesso). */
 export async function createClient(input: NewClientInput) {
-  if (input.senha.length < 10) throw new OnboardingError("A senha precisa ter pelo menos 10 caracteres.");
-  const email = input.email.trim().toLowerCase();
-  const slug = slugify(input.empresa);
-
-  const [taken] = await db
-    .select({ id: schema.organization.id })
-    .from(schema.organization)
-    .where(eq(schema.organization.slug, slug));
-  if (taken) throw new OnboardingError(`Já existe uma empresa com o nome "${input.empresa}".`);
-
-  const ctx = await auth.$context;
-
-  // 1) Usuário (reaproveita se o e-mail já existir)
-  const found = await ctx.internalAdapter.findUserByEmail(email);
-  let userId = found?.user.id;
-  if (!userId) {
-    const user = await ctx.internalAdapter.createUser({ name: input.nome, email, emailVerified: true }, { method: "admin" });
-    userId = user.id;
-    await ctx.internalAdapter.linkAccount({
-      userId,
-      providerId: "credential",
-      accountId: userId,
-      password: await ctx.password.hash(input.senha),
-    });
-  }
-
-  // 2) Empresa + vínculo
-  const [org] = await db
-    .insert(schema.organization)
-    .values({ id: crypto.randomUUID(), name: input.empresa, slug, createdAt: new Date() })
-    .returning();
-  await db.insert(schema.member).values({
-    id: crypto.randomUUID(),
-    organizationId: org.id,
-    userId,
-    role: input.papel ?? "owner",
-    createdAt: new Date(),
-  });
-
-  // 3) Etapas do funil
-  const stages = await db
-    .insert(schema.pipelineStage)
-    .values(schema.DEFAULT_STAGES.map((s) => ({ ...s, organizationId: org.id })))
-    .returning();
-
-  // 4) Chave de API para o n8n (mostrada uma única vez)
-  const apiKey = `dyn_${randomBytes(24).toString("base64url")}`;
-  await db.insert(schema.apiKey).values({
-    organizationId: org.id,
-    name: "n8n",
-    prefix: apiKey.slice(0, 10),
-    keyHash: createHash("sha256").update(apiKey).digest("hex"),
-  });
-
-  if (input.demo) await seedDemo(org.id, stages.map((s) => s.id));
-
-  return { organization: { id: org.id, name: org.name, slug: org.slug }, login: email, apiKey };
+  const r = await createClientAccount({ db, authContext: await auth.$context }, input);
+  if (input.demo) await seedDemo(r.organization.id, r.stageIds);
+  // A senha só volta quando foi gerada aqui (nunca ecoa a senha que quem chamou informou).
+  return { organization: r.organization, login: r.login, senha: input.senha ? undefined : r.senha, apiKey: r.apiKey };
 }
 
 async function seedDemo(organizationId: string, stageIds: string[]) {
@@ -124,6 +56,7 @@ async function seedDemo(organizationId: string, stageIds: string[]) {
         organizationId,
         format: (["feed", "carrossel", "reels"] as const)[i % 3],
         status: statuses[Math.min(i, statuses.length - 1)],
+        approvedAt: (["aprovado", "agendado", "publicado"] as string[]).includes(statuses[Math.min(i, statuses.length - 1)]) ? today : null,
         title: `Post ${i + 1}`,
         caption: `Legenda de exemplo do post ${i + 1}.`,
         scheduledAt: when,

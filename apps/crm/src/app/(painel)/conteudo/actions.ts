@@ -1,13 +1,21 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { decide } from "@/lib/content/decisions";
+import { onContentEvent } from "@/lib/content/hooks";
+import { ContentError } from "@/lib/content/types";
 import { getOrgContext } from "@/lib/context";
-import { setPostFeedback } from "@/lib/data/content";
+import { db } from "@/lib/db";
 
-export async function reviewPostAction(formData: FormData) {
+/** Aprovar ou pedir ajuste pelo painel: a empresa vem da sessão, nunca do navegador. */
+export async function decideAction(postId: string, decision: "aprovar" | "ajuste", comment?: string): Promise<{ ok: true } | { ok: false; error: string }> {
   const { organization } = await getOrgContext();
-  const decision = formData.get("decision") === "aprovar" ? "aprovado" : "rascunho";
-  const feedback = String(formData.get("feedback") ?? "").trim() || null;
-  await setPostFeedback(organization.id, String(formData.get("postId")), decision, feedback);
-  revalidatePath("/conteudo");
+  try {
+    const result = await decide(db, { now: () => new Date(), onEvent: onContentEvent }, { organizationId: organization.id, postId, decision, comment });
+    if (result === "indisponivel") return { ok: false, error: "Este post não está mais disponível. Atualize a página." };
+    return { ok: true };
+  } catch (e) {
+    if (e instanceof ContentError) return { ok: false, error: e.message };
+    console.error(e);
+    return { ok: false, error: "Não foi possível enviar. Tente de novo." };
+  }
 }
