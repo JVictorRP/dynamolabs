@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, lt, sql } from "drizzle-orm";
 import { schema, type Db } from "@dynamo/db";
 
 export type BotJob = typeof schema.botJob.$inferSelect;
@@ -6,6 +6,8 @@ export type JobKind = BotJob["kind"];
 
 const RETRY_SECONDS = [5, 30, 120];
 export const MAX_ATTEMPTS = 3;
+/** Um job "running" há mais que isto é considerado abandonado (queda, deploy, falta de memória). */
+export const LEASE_MINUTES = 10;
 
 /** Agenda (ou empurra) a resposta da conversa: rajadas viram um único job pendente. */
 export async function scheduleReply(db: Db, organizationId: string, conversationId: string, debounceSeconds: number): Promise<void> {
@@ -42,7 +44,8 @@ export async function claimJob(db: Db): Promise<BotJob | null> {
         sql`(select j.id from bot_job j
               where j.status = 'pending' and j.run_after <= now()
                 and (j.conversation_id is null or not exists (
-                  select 1 from bot_job r where r.conversation_id = j.conversation_id and r.status = 'running'))
+                  select 1 from bot_job r where r.conversation_id = j.conversation_id and r.status = 'running'
+                    and r.updated_at > now() - make_interval(mins => ${LEASE_MINUTES})))
               order by j.run_after
               limit 1
               for update skip locked)`,
@@ -75,4 +78,33 @@ export async function failJob(db: Db, id: string, error: string): Promise<"retry
     await db.update(schema.botJob).set({ status: "done", lastError: `${lastError} (coberto por job mais novo)`, updatedAt: new Date() }).where(eq(schema.botJob.id, id));
   }
   return "retry";
+}
+
+/**
+ * Recupera jobs abandonados em "running": voltam para a fila, ou falham de vez se já usaram
+ * todas as tentativas (o chamador manda o aviso final ao cliente).
+ */
+export async function recoverStaleJobs(db: Db, minutes = LEASE_MINUTES): Promise<{ requeued: number; failed: BotJob[] }> {
+  const stale = await db
+    .select()
+    .from(schema.botJob)
+    .where(and(eq(schema.botJob.status, "running"), lt(schema.botJob.updatedAt, sql`now() - make_interval(mins => ${minutes})`)));
+  let requeued = 0;
+  const failed: BotJob[] = [];
+  for (const job of stale) {
+    const note = "abandonado em execução (queda ou reinício do serviço)";
+    if (job.attempts >= MAX_ATTEMPTS) {
+      await db.update(schema.botJob).set({ status: "failed", lastError: note, updatedAt: new Date() }).where(eq(schema.botJob.id, job.id));
+      failed.push(job);
+      continue;
+    }
+    try {
+      await db.update(schema.botJob).set({ status: "pending", lastError: note, runAfter: sql`now()`, updatedAt: new Date() }).where(eq(schema.botJob.id, job.id));
+      requeued += 1;
+    } catch {
+      // Já existe resposta pendente mais nova para a conversa: ela cobre esta.
+      await db.update(schema.botJob).set({ status: "done", lastError: `${note} (coberto por job mais novo)`, updatedAt: new Date() }).where(eq(schema.botJob.id, job.id));
+    }
+  }
+  return { requeued, failed };
 }

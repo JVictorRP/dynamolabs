@@ -3,7 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { schema, type Db } from "@dynamo/db";
 import { createTestDb, seedOrg } from "@dynamo/db/testing";
 import { recordIncoming } from "../src/conversations";
-import { claimJob, completeJob, enqueue, failJob, scheduleReply } from "../src/queue";
+import { claimJob, completeJob, enqueue, failJob, recoverStaleJobs, scheduleReply } from "../src/queue";
 import { incoming, makeDue, secondsUntil } from "./helpers/db";
 
 let db: Db;
@@ -100,5 +100,48 @@ describe("queue", () => {
     await scheduleReply(db, org, c, 0);
     expect(await failJob(db, running!.id, "timeout")).toBe("retry");
     expect(await pending(c)).toHaveLength(1);
+  });
+});
+
+describe("stale running jobs (review critical 2)", () => {
+  it("does not let a job stuck in running block its conversation, and requeues it", async () => {
+    await drain();
+    const org = await seedOrg(db, "Travado");
+    const c = await conv(org, "556");
+    await scheduleReply(db, org, c, 0);
+    await makeDue(db);
+    const stuck = await claimJob(db);
+    await db.update(schema.botJob).set({ updatedAt: new Date(Date.now() - 11 * 60_000) }).where(eq(schema.botJob.id, stuck!.id));
+    await scheduleReply(db, org, c, 0); // nova mensagem depois da queda
+    await makeDue(db);
+    const next = await claimJob(db);
+    expect(next?.conversationId).toBe(c);
+    await completeJob(db, next!.id);
+
+    const r = await recoverStaleJobs(db);
+    expect(r.requeued).toBe(1);
+    const [row] = await db.select().from(schema.botJob).where(eq(schema.botJob.id, stuck!.id));
+    expect(row.status).toBe("pending");
+  });
+
+  it("fails stale jobs that already used every attempt and returns them for the final fallback", async () => {
+    await drain();
+    const org = await seedOrg(db, "Esgotado");
+    const id = await enqueue(db, { organizationId: org, kind: "sync_planilha", payload: {} });
+    await db.update(schema.botJob).set({ status: "running", attempts: 3, updatedAt: new Date(Date.now() - 11 * 60_000) }).where(eq(schema.botJob.id, id));
+    const r = await recoverStaleJobs(db);
+    expect(r.failed.map((j) => j.id)).toEqual([id]);
+    const [row] = await db.select().from(schema.botJob).where(eq(schema.botJob.id, id));
+    expect(row.status).toBe("failed");
+  });
+
+  it("leaves recent running jobs alone", async () => {
+    await drain();
+    const org = await seedOrg(db, "Recente");
+    const c = await conv(org, "557");
+    await scheduleReply(db, org, c, 0);
+    await makeDue(db);
+    await claimJob(db);
+    expect(await recoverStaleJobs(db)).toEqual({ requeued: 0, failed: [] });
   });
 });

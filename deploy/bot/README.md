@@ -90,6 +90,8 @@ No CRM, entre como dono ou admin da empresa e abra **Chatbot**:
 
 ## Observações
 
+- **Reinícios e deploys:** ao receber o sinal de parada, o bot termina as respostas em andamento por até 20 s. No Easypanel, em **Avançado → Stop grace period** (ou equivalente), use 30 s. Se o serviço cair no meio de uma resposta, o trabalho volta para a fila sozinho em até 10 minutos, e a conversa não fica travada.
+
 - **Avisos ao responsável** (lead quente, passagem para humano, teto atingido) são mensagens de WhatsApp enviadas pelo número do bot. A Meta só entrega mensagem livre a quem escreveu para o número nas últimas 24 h. Peça ao responsável que mande um "oi" ao número do bot de vez em quando, ou use o n8n para avisos por outro canal. Avisos que a Meta recusar não travam o atendimento.
 - **Logs:** no Easypanel, serviço `bot` → **Logs**. Erros de token aparecem como "Meta respondeu 401", e o número fica "com problema" no painel. Gere um token novo (1.3) e ligue o número de novo (seção 3).
 - **Desligar com urgência:** no CRM, em Chatbot → Visão geral, desligue o bot. As mensagens continuam gravadas e nada é respondido.

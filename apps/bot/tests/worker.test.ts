@@ -4,7 +4,7 @@ import { claimJob, recordIncoming, scheduleReply, WhatsAppAuthError, WhatsAppTem
 import { schema, type Db } from "@dynamo/db";
 import { createTestDb } from "@dynamo/db/testing";
 import { purgeOldMessages } from "../src/periodic";
-import { runJob, type JobDeps } from "../src/worker";
+import { reapStaleJobs, runJob, type JobDeps } from "../src/worker";
 import { ENC_KEY, fakeLlm, fakeWhatsApp, seedBot, textReply } from "./fakes";
 
 let db: Db;
@@ -175,5 +175,18 @@ describe("burst during a reply (review critical 1)", () => {
     expect(JSON.stringify(last.content)).toContain("quanto custa o bacalhau?");
     const msgs = await db.select().from(schema.message).where(eq(schema.message.conversationId, conversationId));
     expect(msgs).toHaveLength(4);
+  });
+});
+
+describe("reapStaleJobs (review critical 2)", () => {
+  it("sends the final fallback for a reply that crashed on its last attempt", async () => {
+    const { conversationId, job } = await incomingJob("Reaper");
+    await db.update(schema.botJob).set({ attempts: 3, updatedAt: new Date(Date.now() - 11 * 60_000) }).where(eq(schema.botJob.id, job.id));
+    const d = deps();
+    const r = await reapStaleJobs(d);
+    expect(r.failed).toBe(1);
+    expect(d.wa.sent.filter((s) => s.to === "5527900002222").map((s) => s.body)).toEqual([MSG_JA_RESPONDO]);
+    const [conv] = await db.select().from(schema.conversation).where(eq(schema.conversation.id, conversationId));
+    expect(conv.mode).toBe("humano");
   });
 });

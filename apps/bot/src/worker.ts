@@ -6,6 +6,7 @@ import {
   claimJob,
   completeJob,
   failJob,
+  recoverStaleJobs,
   getConfig,
   handOff,
   recordOutgoing,
@@ -65,6 +66,14 @@ export async function runJob(job: BotJob, deps: JobDeps): Promise<void> {
   }
 }
 
+/** Recupera jobs abandonados (queda ou deploy no meio do trabalho) e avisa quem ficou sem resposta. */
+export async function reapStaleJobs(deps: JobDeps): Promise<{ requeued: number; failed: number }> {
+  const r = await recoverStaleJobs(deps.db);
+  for (const job of r.failed) await finalFallback(deps, job);
+  if (r.requeued || r.failed.length) console.warn(`Jobs abandonados: ${r.requeued} de volta à fila, ${r.failed.length} com aviso final.`);
+  return { requeued: r.requeued, failed: r.failed.length };
+}
+
 export function startWorker(deps: JobDeps, opts: { concurrency?: number; idleMs?: number } = {}) {
   const concurrency = opts.concurrency ?? 4;
   const idleMs = opts.idleMs ?? 1000;
@@ -86,6 +95,9 @@ export function startWorker(deps: JobDeps, opts: { concurrency?: number; idleMs?
       await runJob(job, deps);
     }
   }
+  const reap = () => void reapStaleJobs(deps).catch((e) => console.error("Erro ao recuperar jobs:", e));
+  reap();
+  const reaper = setInterval(reap, 60_000);
   for (let i = 0; i < concurrency; i++) {
     const p = loop();
     running.add(p);
@@ -94,6 +106,7 @@ export function startWorker(deps: JobDeps, opts: { concurrency?: number; idleMs?
   return {
     async stop(timeoutMs = 20_000) {
       stopping = true;
+      clearInterval(reaper);
       await Promise.race([Promise.all(running), new Promise((r) => setTimeout(r, timeoutMs))]);
     },
   };
