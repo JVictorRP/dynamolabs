@@ -54,11 +54,13 @@ export async function getConfig(db: Db, organizationId: string): Promise<BotConf
 export async function updateConfig(db: Db, organizationId: string, patch: BotConfigInput): Promise<BotConfig> {
   const parsed = botConfigInput.safeParse(patch);
   if (!parsed.success) throw new Error(parsed.error.issues[0].message);
-  await getConfig(db, organizationId);
+  const current = await getConfig(db, organizationId);
   const { monthlyCapBrl, ...rest } = parsed.data;
+  const values = { ...rest, ...(monthlyCapBrl !== undefined ? { monthlyCapBrl: monthlyCapBrl.toFixed(2) } : {}) };
+  if (Object.keys(values).length === 0) return current;
   const [updated] = await db
     .update(schema.botConfig)
-    .set({ ...rest, ...(monthlyCapBrl !== undefined ? { monthlyCapBrl: monthlyCapBrl.toFixed(2) } : {}) })
+    .set(values)
     .where(eq(schema.botConfig.organizationId, organizationId))
     .returning();
   return updated;

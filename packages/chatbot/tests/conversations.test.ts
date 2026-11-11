@@ -68,6 +68,11 @@ describe("config", () => {
     expect(c.actions).toEqual({ registrar_lead: true, passar_humano: true, avisar_responsavel: false, enviar_n8n: false });
   });
 
+  it("accepts an empty update", async () => {
+    const org = await seedOrg(db, "Vazio");
+    expect((await updateConfig(db, org, {})).organizationId).toBe(org);
+  });
+
   it("validates updates", async () => {
     const org = await seedOrg(db, "Cfg2");
     await expect(updateConfig(db, org, { n8nWebhookUrl: "http://n8n.local/hook" })).rejects.toThrow(/https/);
