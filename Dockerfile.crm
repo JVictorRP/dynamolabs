@@ -11,8 +11,13 @@ COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY apps/crm/package.json apps/crm/
 COPY apps/site/package.json apps/site/
 COPY packages/public-lead/package.json packages/public-lead/
+COPY packages/db/package.json packages/db/
+COPY packages/chatbot/package.json packages/chatbot/
+COPY apps/bot/package.json apps/bot/
 RUN pnpm install --frozen-lockfile
 COPY packages/public-lead packages/public-lead
+COPY packages/db packages/db
+COPY packages/chatbot packages/chatbot
 COPY apps/crm apps/crm
 ENV NEXT_TELEMETRY_DISABLED=1
 # Segredo descartável só para o build (o real vem do .env em produção)

@@ -1,5 +1,6 @@
 import "server-only";
-import { and, asc, count, desc, eq, gte } from "drizzle-orm";
+import { and, count, desc, eq, gte } from "drizzle-orm";
+import { ensureStages as ensureStagesIn } from "@dynamo/db";
 import { db, schema } from "../db";
 
 type LeadSource = (typeof schema.leadSource.enumValues)[number];
@@ -22,19 +23,7 @@ export type IncomingLead = {
 };
 
 /** Garante que a empresa tenha as etapas padrão do funil. */
-export async function ensureStages(organizationId: string) {
-  const existing = await db
-    .select()
-    .from(schema.pipelineStage)
-    .where(eq(schema.pipelineStage.organizationId, organizationId))
-    .orderBy(asc(schema.pipelineStage.position));
-  if (existing.length > 0) return existing;
-
-  return db
-    .insert(schema.pipelineStage)
-    .values(schema.DEFAULT_STAGES.map((s) => ({ ...s, organizationId })))
-    .returning();
-}
+export const ensureStages = (organizationId: string) => ensureStagesIn(db, organizationId);
 
 /** Insere leads vindos do n8n. Leads repetidos (mesmo externalId + origem) são ignorados. */
 export async function ingestLeads(organizationId: string, leads: IncomingLead[]) {

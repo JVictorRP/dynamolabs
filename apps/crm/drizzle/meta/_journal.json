@@ -8,6 +8,20 @@
       "when": 1793920854994,
       "tag": "0000_demonic_hardball",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794361935355,
+      "tag": "0001_chatbot",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794388714992,
+      "tag": "0002_answered_at",
+      "breakpoints": true
     }
   ]
 }

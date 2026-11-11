@@ -14,6 +14,9 @@
     "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0",
+    "@dynamo/chatbot": "workspace:*",
+    "@dynamo/db": "workspace:*",
     "@dynamo/public-lead": "workspace:*",
     "better-auth": "^1.7.18",
     "drizzle-orm": "^0.45.4",

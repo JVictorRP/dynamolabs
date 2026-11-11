@@ -1,0 +1,20 @@
+# syntax=docker/dockerfile:1
+# Chatbot de WhatsApp (bot.dynamo.business). Build a partir da raiz do repositório.
+# As migrações do banco são aplicadas pelo CRM: implante o CRM antes do bot (ver deploy/bot/README.md).
+
+FROM node:22-alpine AS builder
+RUN corepack enable
+WORKDIR /repo
+COPY . .
+RUN pnpm install --frozen-lockfile --filter bot...
+RUN pnpm --filter bot build
+
+FROM node:22-alpine AS runner
+ENV NODE_ENV=production PORT=3001
+WORKDIR /app
+RUN addgroup -S app && adduser -S app -G app
+COPY --from=builder --chown=app:app /repo/apps/bot/dist/server.mjs /repo/apps/bot/dist/server.mjs.map ./
+USER app
+EXPOSE 3001
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s CMD wget -qO- http://127.0.0.1:3001/health || exit 1
+CMD ["node", "--enable-source-maps", "server.mjs"]

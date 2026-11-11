@@ -2,6 +2,9 @@
 
 import { z } from "zod";
 import { adminTokenHint, checkAdminToken, configuredAdminToken } from "@/lib/admin";
+import { AdminError, deleteContactData, linkNumber, setNumberStatus } from "@dynamo/chatbot";
+import { encKey } from "@/lib/chatbot";
+import { db } from "@/lib/db";
 import { createClient, OnboardingError } from "@/lib/onboarding";
 
 export type NovoClienteState =
@@ -18,6 +21,16 @@ const schema = z.object({
   demo: z.boolean(),
 });
 
+/** Mensagem de erro da chave da Dynamo, ou null quando confere. */
+function adminTokenError(token: string): string | null {
+  if (checkAdminToken(token)) return null;
+  const configured = configuredAdminToken();
+  if (configured.length < 32) {
+    return `O app não está lendo um ADMIN_TOKEN válido (lido: ${configured.length} caracteres; precisa de 32+). Confira a variável no Easypanel e faça um novo Deploy.`;
+  }
+  return `Chave da Dynamo incorreta. ${adminTokenHint(token)}`;
+}
+
 export async function novoClienteAction(_prev: NovoClienteState, formData: FormData): Promise<NovoClienteState> {
   const parsed = schema.safeParse({
     token: String(formData.get("token") ?? ""),
@@ -29,16 +42,8 @@ export async function novoClienteAction(_prev: NovoClienteState, formData: FormD
   });
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
 
-  if (!checkAdminToken(parsed.data.token)) {
-    const configured = configuredAdminToken();
-    if (configured.length < 32) {
-      return {
-        ok: false,
-        error: `O app não está lendo um ADMIN_TOKEN válido (lido: ${configured.length} caracteres; precisa de 32+). Confira a variável no Easypanel e faça um novo Deploy.`,
-      };
-    }
-    return { ok: false, error: `Chave da Dynamo incorreta. ${adminTokenHint(parsed.data.token)}` };
-  }
+  const tokenError = adminTokenError(parsed.data.token);
+  if (tokenError) return { ok: false, error: tokenError };
 
   try {
     const { token: _t, ...input } = parsed.data;
@@ -50,4 +55,52 @@ export async function novoClienteAction(_prev: NovoClienteState, formData: FormD
     console.error(e);
     return { ok: false, error: "Erro inesperado ao cadastrar. Veja os logs do serviço no Easypanel." };
   }
+}
+
+export type AdminFormState = { ok: true; message: string } | { ok: false; error: string } | null;
+
+const field = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
+
+async function guarded(fd: FormData, run: () => Promise<string>): Promise<AdminFormState> {
+  const tokenError = adminTokenError(field(fd, "token"));
+  if (tokenError) return { ok: false, error: tokenError };
+  try {
+    return { ok: true, message: await run() };
+  } catch (e) {
+    if (e instanceof AdminError) return { ok: false, error: e.message };
+    console.error(e);
+    return { ok: false, error: e instanceof Error ? e.message : "Erro inesperado. Veja os logs do serviço no Easypanel." };
+  }
+}
+
+export async function ligarWhatsappAction(_prev: AdminFormState, fd: FormData): Promise<AdminFormState> {
+  return guarded(fd, async () => {
+    await linkNumber(
+      db,
+      {
+        organizationSlug: field(fd, "slug"),
+        phoneNumberId: field(fd, "phoneNumberId"),
+        wabaId: field(fd, "wabaId"),
+        displayPhone: field(fd, "displayPhone"),
+        accessToken: field(fd, "accessToken"),
+      },
+      encKey(),
+    );
+    return "Número ligado. Agora inscreva o webhook na Meta (deploy/bot/README.md, passo 4).";
+  });
+}
+
+export async function statusWhatsappAction(_prev: AdminFormState, fd: FormData): Promise<AdminFormState> {
+  return guarded(fd, async () => {
+    const status = field(fd, "status") === "desligado" ? "desligado" : "ativo";
+    await setNumberStatus(db, field(fd, "phoneNumberId"), status);
+    return status === "desligado" ? "Número desligado: o bot ignora as mensagens dele." : "Número reativado.";
+  });
+}
+
+export async function excluirTitularAction(_prev: AdminFormState, fd: FormData): Promise<AdminFormState> {
+  return guarded(fd, async () => {
+    const r = await deleteContactData(db, field(fd, "slug"), field(fd, "phone"));
+    return `Apagadas ${r.conversations} conversa(s) e ${r.messages} mensagem(ns) desse telefone. O lead no CRM, se houver, continua.`;
+  });
 }

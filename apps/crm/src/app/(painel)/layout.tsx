@@ -2,6 +2,7 @@ import { getOrgContext } from "@/lib/context";
 import { NavLink } from "@/components/nav-link";
 import { SignOutButton } from "@/components/sign-out";
 import { FooterLine, Wordmark } from "@/components/brand";
+import { canManageBot } from "@/lib/chatbot";
 
 const NAV = [
   { href: "/", label: "Visão geral" },
@@ -11,7 +12,8 @@ const NAV = [
 ];
 
 export default async function PainelLayout({ children }: { children: React.ReactNode }) {
-  const { organization, user } = await getOrgContext();
+  const { organization, user, role } = await getOrgContext();
+  const nav = canManageBot(role) ? [...NAV, { href: "/chatbot", label: "Chatbot" }] : NAV;
 
   return (
     <div className="flex min-h-dvh flex-col md:flex-row">
@@ -21,7 +23,7 @@ export default async function PainelLayout({ children }: { children: React.React
           <p className="eyebrow mt-4 !text-[0.62rem] !tracking-[0.3em] text-teal">{organization.name}</p>
         </div>
         <nav className="flex gap-1 overflow-x-auto px-3 pb-3 md:flex-col md:pb-0">
-          {NAV.map((item) => (
+          {nav.map((item) => (
             <NavLink key={item.href} href={item.href}>
               {item.label}
             </NavLink>
