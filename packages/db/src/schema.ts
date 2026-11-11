@@ -61,6 +61,7 @@ export const contentFormat = pgEnum("content_format", ["feed", "carrossel", "ree
 export const contentStatus = pgEnum("content_status", [
   "rascunho",
   "em_aprovacao",
+  "ajuste_pedido",
   "aprovado",
   "agendado",
   "publicado",
@@ -186,6 +187,10 @@ export const contentPost = pgTable(
     scheduledAt: timestamp("scheduled_at", { withTimezone: true }),
     publishedAt: timestamp("published_at", { withTimezone: true }),
     clientFeedback: text("client_feedback"),
+    /** Quando o cliente aprovou. Três dias depois o post sai do link dele (a equipe continua com tudo). */
+    approvedAt: timestamp("approved_at", { withTimezone: true }),
+    /** Arquivado pela equipe: some do link do cliente. */
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
     ...timestamps,
   },
   (t) => [index("content_post_org_sched_idx").on(t.organizationId, t.scheduledAt)],
@@ -225,3 +230,4 @@ export const pipelineStageRelations = relations(pipelineStage, ({ many }) => ({
   leads: many(lead),
 }));
 export * from "./chatbot-schema";
+export * from "./content-schema";
