@@ -52,6 +52,7 @@ BETTER_AUTH_URL=https://app.dynamo.business
 BETTER_AUTH_SECRET=COLE_O_SEGREDO_1
 DATABASE_URL=COLE_A_INTERNAL_CONNECTION_URL
 ADMIN_TOKEN=COLE_O_SEGREDO_2
+DYNAMO_STAFF_EMAILS=SEU_EMAIL_DE_LOGIN
 ```
 
 Substitua o texto em MAIÚSCULAS pelo valor, sem aspas, espaços ou sinais `< >`.
@@ -67,7 +68,9 @@ Abra **https://app.dynamo.business** → tela de login.
 
 ## 5. Cadastrar clientes
 
-**Jeito mais fácil:** abra **https://app.dynamo.business/admin**, cole o `ADMIN_TOKEN`, preencha empresa, contato, e-mail e senha e clique em *Cadastrar cliente*. A tela mostra o login e a chave do n8n. Marque "dados fictícios" para uma conta de demonstração.
+**Jeito mais fácil:** entre no CRM com um e-mail listado em `DYNAMO_STAFF_EMAILS` e abra **Clientes** no menu (ou **https://app.dynamo.business/clientes**). Lá você cria a empresa com o primeiro acesso, adiciona mais pessoas e gera senha nova para quem esqueceu. A senha é gerada automaticamente e aparece uma única vez, com o botão *Copiar mensagem para o cliente*.
+
+**Primeiro acesso da equipe (sem nenhuma conta ainda):** abra **https://app.dynamo.business/admin**, cole o `ADMIN_TOKEN` e cadastre a empresa da Dynamo com o seu e-mail. Depois use a área Clientes. A tela `/admin` continua servindo para ligar o WhatsApp de um cliente.
 
 **Por API (n8n ou terminal):**
 

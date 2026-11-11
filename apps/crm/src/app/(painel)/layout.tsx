@@ -3,6 +3,7 @@ import { NavLink } from "@/components/nav-link";
 import { SignOutButton } from "@/components/sign-out";
 import { FooterLine, Wordmark } from "@/components/brand";
 import { canManageBot } from "@/lib/chatbot";
+import { isStaff } from "@/lib/staff";
 
 const NAV = [
   { href: "/", label: "Visão geral" },
@@ -13,7 +14,11 @@ const NAV = [
 
 export default async function PainelLayout({ children }: { children: React.ReactNode }) {
   const { organization, user, role } = await getOrgContext();
-  const nav = canManageBot(role) ? [...NAV, { href: "/chatbot", label: "Chatbot" }] : NAV;
+  const nav = [
+    ...NAV,
+    ...(canManageBot(role) ? [{ href: "/chatbot", label: "Chatbot" }] : []),
+    ...(isStaff(user.email) ? [{ href: "/clientes", label: "Clientes" }] : []),
+  ];
 
   return (
     <div className="flex min-h-dvh flex-col md:flex-row">
