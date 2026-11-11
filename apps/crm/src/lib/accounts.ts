@@ -110,6 +110,18 @@ export async function resetMemberPassword(deps: AccountDeps, organizationId: str
   return senha;
 }
 
+/** Senha nova para quem tem conta, pelo e-mail (recuperação feita pela equipe). Encerra as sessões abertas. */
+export async function resetPasswordByEmail(deps: AccountDeps, email: string): Promise<{ login: string; senha: string }> {
+  const login = email.trim().toLowerCase();
+  const ctx = deps.authContext;
+  const found = await ctx.internalAdapter.findUserByEmail(login);
+  if (!found) throw new AccountError("Nenhum usuário com este e-mail.");
+  const senha = generatePassword();
+  await ctx.internalAdapter.updatePassword(found.user.id, await ctx.password.hash(senha));
+  await ctx.internalAdapter.deleteUserSessions(found.user.id);
+  return { login, senha };
+}
+
 export type ClientRow = { id: string; name: string; slug: string; createdAt: Date; members: number; leadsThisMonth: number; whatsappStatus: string | null };
 
 export async function listClients(db: Db, now: Date): Promise<ClientRow[]> {

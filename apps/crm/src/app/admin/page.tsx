@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Wordmark } from "@/components/brand";
-import { LigarWhatsappForm, StatusWhatsappForm, TitularForm } from "./chatbot-forms";
+import { LigarWhatsappForm, ResetSenhaForm, StatusWhatsappForm, TitularForm } from "./chatbot-forms";
 import { NovoClienteForm } from "./form";
 
 export const metadata: Metadata = { title: "Novo cliente" };
@@ -17,6 +17,12 @@ export default function AdminPage() {
         </h1>
         <p className="display-light mt-2 text-2xl">empresa, acesso e chave do n8n.</p>
         <NovoClienteForm />
+
+        <h2 className="display mt-16 text-3xl">
+          Esqueci a <span className="text-amber">senha</span>
+        </h2>
+        <p className="display-light mt-2 text-xl">gera uma senha nova para uma conta existente.</p>
+        <ResetSenhaForm />
 
         <p className="eyebrow mt-20">Chatbot</p>
         <h2 className="display mt-4 text-4xl">

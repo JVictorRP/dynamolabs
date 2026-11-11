@@ -5,7 +5,7 @@ import { organization } from "better-auth/plugins";
 import { eq } from "drizzle-orm";
 import { schema, type Db } from "@dynamo/db";
 import { createTestDb } from "@dynamo/db/testing";
-import { addMember, createClientAccount, generatePassword, getClient, listClients, resetMemberPassword, AccountError } from "../src/lib/accounts";
+import { addMember, createClientAccount, generatePassword, getClient, listClients, resetMemberPassword, resetPasswordByEmail, AccountError } from "../src/lib/accounts";
 import { isStaffEmail } from "../src/lib/staff-core";
 
 let db: Db;
@@ -111,5 +111,31 @@ describe("listClients", () => {
     const rows = await listClients(db, new Date());
     const row = rows.find((r) => r.id === c.organization.id)!;
     expect(row).toMatchObject({ name: "Lista Teste", members: 2, leadsThisMonth: 1, whatsappStatus: null });
+  });
+});
+
+describe("resetPasswordByEmail", () => {
+  it("resets by e-mail: the old password stops working, the new one works, sessions end", async () => {
+    const c = await createClientAccount(await deps(), { empresa: "Sem Senha Ltda", nome: "Teste", email: "teste@semsenha.com" });
+    const [u] = await db.select().from(schema.user).where(eq(schema.user.email, "teste@semsenha.com"));
+    await auth.api.signInEmail({ body: { email: "teste@semsenha.com", password: c.senha! } });
+    const r = await resetPasswordByEmail(await deps(), "teste@semsenha.com");
+    expect(r.login).toBe("teste@semsenha.com");
+    expect(r.senha).toHaveLength(16);
+    expect(r.senha).not.toBe(c.senha);
+    expect(await canLogin("teste@semsenha.com", c.senha!)).toBe(false);
+    expect(await canLogin("teste@semsenha.com", r.senha)).toBe(true);
+    expect(await db.select().from(schema.session).where(eq(schema.session.userId, u.id))).toHaveLength(1);
+  });
+
+  it("refuses an unknown e-mail", async () => {
+    await expect(resetPasswordByEmail(await deps(), "ninguem@nada.com")).rejects.toThrow("Nenhum usuário com este e-mail.");
+  });
+
+  it("ignores case and spaces in the e-mail", async () => {
+    await createClientAccount(await deps(), { empresa: "Caixa Alta SA", nome: "Cx", email: "cx@alta.com" });
+    const r = await resetPasswordByEmail(await deps(), "  CX@Alta.com ");
+    expect(r.login).toBe("cx@alta.com");
+    expect(await canLogin("cx@alta.com", r.senha)).toBe(true);
   });
 });
