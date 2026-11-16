@@ -185,9 +185,9 @@ test("keeps the services menu readable: even the brightest spots behind the righ
   for (const p of [0.7, 0.8, 0.95]) {
     await goTo(page, p);
     await page.evaluate(() => window.__dynamo!.debug!.hideText(true));
-    await page.addStyleTag({ content: '[data-stage="hero-s2"] nav { visibility: hidden !important; }' });
+    await page.addStyleTag({ content: '[data-stage="hero-s2"] [data-services] { visibility: hidden !important; }' });
     await page.waitForTimeout(100);
-    const navBox = (await page.locator('[data-stage="hero-s2"] nav').boundingBox())!;
+    const navBox = (await page.locator('[data-stage="hero-s2"] [data-services]').boundingBox())!;
     const titleBox = (await page.locator('[data-stage="hero-s2"] [data-title="s2"]').boundingBox())!;
     const x0 = Math.min(navBox.x, titleBox.x);
     const y0 = Math.min(navBox.y, titleBox.y);
@@ -232,33 +232,14 @@ test("hero: the decorative thought line sits above the eyebrow, left aligned wit
   expect(Math.abs(t.x - e.x)).toBeLessThan(2);
 });
 
-test("section 2: choosing a service brings its glass card forward, fades the others and stays in the top half", async ({ page }) => {
+test("section 2: the five services sit on the right as a plain list, with no cards on the left", async ({ page }) => {
   await open(page);
   await goTo(page, 0.8);
   const vp = page.viewportSize()!;
-  const deck = page.locator("[data-service-deck]");
-  await expect(deck).toBeAttached();
-  const box = (await deck.boundingBox())!;
-  expect(box.y).toBeGreaterThanOrEqual(0.09 * vp.height);
-  expect(box.y).toBeLessThan(vp.height / 3);
-  expect(box.y + box.height).toBeLessThanOrEqual(vp.height / 2 + 1);
-  const states = () => page.locator("[data-service-card]").evaluateAll((els) => els.map((el) => (el as HTMLElement).dataset.state));
-  expect(await states()).toEqual(["rest", "rest", "rest", "rest", "rest"]);
-  await page.locator('[data-service-button="3"]').click(); // clique serve para mouse e toque
-  await page.waitForTimeout(700);
-  expect(await states()).toEqual(["dim", "dim", "dim", "active", "dim"]);
-  const opacities = () => page.locator("[data-service-card]").evaluateAll((els) => els.map((el) => Number(getComputedStyle(el).opacity)));
-  await expect.poll(async () => (await opacities())[3], { timeout: 5000 }).toBeGreaterThan(0.95); // a transição de 0,35 s demora mais sob WebGL por software
-  await expect.poll(async () => Math.max(...(await opacities()).filter((_, i) => i !== 3)), { timeout: 5000 }).toBeLessThan(0.3);
-  await page.keyboard.press("Escape");
-  await page.waitForTimeout(500);
-  expect(await states()).toEqual(["rest", "rest", "rest", "rest", "rest"]);
-});
-
-test("section 2: the services menu is inert while the hero is on screen and live in section 2", async ({ page }) => {
-  await open(page);
-  await goTo(page, 0.05);
-  await expect(page.locator("nav[aria-label='Serviços da Dynamo']")).toHaveAttribute("inert", "");
-  await goTo(page, 0.8);
-  await expect(page.locator("nav[aria-label='Serviços da Dynamo']")).not.toHaveAttribute("inert", "");
+  const list = page.locator('[data-stage="hero-s2"] [data-services]');
+  await expect(list.locator("li")).toHaveCount(5);
+  await expect(list).toBeVisible();
+  const box = (await list.boundingBox())!;
+  expect(box.x + box.width).toBeLessThanOrEqual(vp.width + 1);
+  await expect(page.locator("[data-service-deck], [data-service-card], [data-service-button]")).toHaveCount(0);
 });

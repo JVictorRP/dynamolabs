@@ -1,6 +1,5 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { TITLE_SIZE_EM } from "@/content/title-sizes";
 import { registerHideText } from "@/lib/choreo/debug-hooks";
@@ -18,11 +17,9 @@ import heroManifest from "../../public/frames/v1/manifest.json";
 import { DecoText } from "./DecoText";
 import { useCopy, useLang } from "./LocaleProvider";
 import { HeroStatic, Section2Static } from "./StaticSections";
+import { ServicesList } from "./ServicesList";
 import { ThoughtLineLazy } from "./ThoughtLineLazy";
 import { StageShell } from "./StageShell";
-
-// O menu de vidro (GlassSurface) é decoração pesada: carrega depois da hidratação, fora do JavaScript inicial.
-const ServicesPanel = dynamic(() => import("./ServicesPanel").then((m) => m.ServicesPanel), { ssr: false });
 
 const FONT_URL = "/fonts/ArchivoBlack-Regular.ttf";
 const GAP = 18; // px entre o bloco 3D e o texto HTML vizinho
@@ -36,22 +33,7 @@ const S2_BODY_OPACITY = `clamp(0, calc((${P} - 0.56) / 0.07), 1)`;
 // Fallback sem WebGL: o mesmo movimento dos títulos 3D (dobra do hero, subida da seção 2), em CSS 3D puro.
 const HERO_FOLD_3D = `perspective(900px) rotateX(calc(clamp(0, calc((${P} - 0.25) / 0.2), 1) * -69deg))`;
 const S2_RISE_3D = `perspective(900px) rotateX(calc((1 - clamp(0, calc((${P} - 0.45) / 0.15), 1)) * 46deg))`;
-const S2_LIVE_FROM = 0.6;
-const S2_LIVE_TO = 0.97;
 const BREATHER = `clamp(0, calc((${P} - 0.92) / 0.08), 1)`;
-
-/**
- * Caixa dos cards de serviço: sempre na metade de cima da tela, começando perto do topo (abaixo do cabeçalho) e sem passar de 50% da altura.
- * Em tela larga ocupa a esquerda, longe do título da seção 2 (que fica à direita) e do texto decorativo; em tela vertical, a largura toda.
- */
-export function servicesDeckBox(vp: Viewport): { left: number; top: number; width: number; height: number } {
-  const margin = Math.min(Math.max(vp.w * 0.05, 20), 72);
-  const portrait = vp.w < vp.h * 0.9;
-  const top = Math.max(76, vp.h * 0.11);
-  const height = Math.max(0, Math.min(340, vp.h * 0.5 - top - 4));
-  const width = portrait ? vp.w - 2 * margin : Math.min(vp.w * 0.28, 420);
-  return { left: margin, top, width, height };
-}
 
 type Sizes = { hero: { width: number; height: number }; s2: { width: number; height: number } };
 const POSTER_VERSION = (heroManifest as { version?: string }).version ?? "";
@@ -87,8 +69,6 @@ function AnimatedHeroStage() {
   const [renderer, setRenderer] = useState<StageHandle["renderer"] | null>(null);
   // Enquanto o título 3D não está pronto (ou se ele falhar), o título HTML aparece achatado: o texto nunca depende do 3D.
   const [titlesReady, setTitlesReady] = useState(false);
-  // O menu de serviços só aceita foco e mouse enquanto a seção 2 está na tela (o resto do tempo fica inerte).
-  const [s2Live, setS2Live] = useState(false);
 
   const layouts: Layouts | null = useMemo(
     () => (vp ? { vp, hero: heroLayout(vp, { widthEm: sizes.hero.width }), s2: s2Layout(vp, { widthEm: sizes.s2.width, heightEm: sizes.s2.height }) } : null),
@@ -112,7 +92,6 @@ function AnimatedHeroStage() {
   const onProgress = useCallback(
     (p: number) => {
       progressRef.current = p;
-      setS2Live(p > S2_LIVE_FROM && p < S2_LIVE_TO);
       apply(p);
       stageRef.current?.setProgress(p);
     },
@@ -219,8 +198,6 @@ function AnimatedHeroStage() {
   const hero = layouts?.hero;
   const s2 = layouts?.s2;
   const s2BlockPx = s2 ? sizes.s2.height * s2.fontPx : 0;
-  const portrait = vp ? vp.w < vp.h * 0.9 : false;
-  const deck = vp ? servicesDeckBox(vp) : {};
 
   return (
     <StageShell id="hero-s2" pinVh={450} onProgress={onProgress}>
@@ -301,14 +278,11 @@ function AnimatedHeroStage() {
             <p data-copy="s2" className="eyebrow absolute m-0 font-display font-bold text-amber uppercase" style={style({ left: s2.left, bottom: s2.bottom + s2BlockPx + GAP, opacity: S2_EYEBROW_OPACITY })}>
               {copy.s2.eyebrow}
             </p>
-            <ServicesPanel
+            <ServicesList
               label={copy.s2.servicesLabel}
               services={copy.s2.services}
-              live={s2Live}
-              portrait={portrait}
               fontSize={Math.min(26, Math.max(15, s2.fontPx * 0.3))}
-              menuStyle={style({ left: s2.left, top: layouts!.vp.h - s2.bottom + GAP, width: sizes.s2.width * s2.fontPx, opacity: S2_BODY_OPACITY })}
-              deckStyle={style({ ...deck, opacity: S2_BODY_OPACITY })}
+              style={style({ left: s2.left, top: layouts!.vp.h - s2.bottom + GAP, width: sizes.s2.width * s2.fontPx, opacity: S2_BODY_OPACITY })}
             />
             <DecoText lines={copy.s2.deco} style={style({ left: layouts!.s2.left - sizes.s2.width * s2.fontPx * 0.55, top: 104, opacity: S2_EYEBROW_OPACITY })} />
           </>
