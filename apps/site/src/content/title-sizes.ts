@@ -9,7 +9,7 @@ type Size = { width: number; height: number };
  * atualize aqui.
  */
 export const TITLE_SIZE_EM: Record<Lang, { hero: Size; s2: Size; video2: Size }> = {
-  pt: { hero: { width: 8.92, height: 1.62 }, s2: { width: 7.316, height: 2.52 }, video2: { width: 7.887, height: 2.52 } },
-  en: { hero: { width: 7.44, height: 1.62 }, s2: { width: 6.444, height: 2.52 }, video2: { width: 6.777, height: 2.52 } },
-  es: { hero: { width: 9.198, height: 1.62 }, s2: { width: 7.039, height: 2.52 }, video2: { width: 7.165, height: 2.52 } },
+  pt: { hero: { width: 9.72, height: 1.62 }, s2: { width: 7.316, height: 2.52 }, video2: { width: 7.887, height: 2.52 } },
+  en: { hero: { width: 10.109, height: 1.62 }, s2: { width: 6.444, height: 2.52 }, video2: { width: 6.777, height: 2.52 } },
+  es: { hero: { width: 9.609, height: 1.62 }, s2: { width: 7.039, height: 2.52 }, video2: { width: 7.165, height: 2.52 } },
 };

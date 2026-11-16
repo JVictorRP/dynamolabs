@@ -40,9 +40,10 @@ const FRAGMENT = /* glsl */ `
     // Apoio do hero: elipse 75% x 62% no canto inferior esquerdo.
     float dH = length((s - vec2(0.12, 0.0)) / vec2(0.75, 0.62));
     a = over(a, uHero * 0.82 * (1.0 - clamp(dH / 0.7, 0.0, 1.0)));
-    // Apoio da seção 2: elipse na parte superior direita, onde o bloco fica.
-    float dS = length((s - vec2(0.82, 0.72)) / vec2(0.62, 0.55));
-    a = over(a, uS2 * 0.75 * (1.0 - clamp(dS / 0.72, 0.0, 1.0)));
+    // Apoio da seção 2: elipse na parte superior direita, onde ficam o título e o menu. Platô curto no miolo (0.84 de preto
+    // até 20% do raio) e queda suave até a borda, para o bloco inteiro ficar sobre fundo escuro sem apagar o vídeo.
+    float dS = length((s - vec2(0.81, 0.70)) / vec2(0.67, 0.58));
+    a = over(a, uS2 * 0.84 * (1.0 - smoothstep(0.2, 0.9, dS)));
 
     // Apoio do vídeo 2: elipse no canto superior esquerdo, onde fica o título.
     float dL = length((s - vec2(0.16, 0.74)) / vec2(0.62, 0.5));

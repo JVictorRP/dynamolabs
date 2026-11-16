@@ -28,7 +28,7 @@ const opacityOf = (page: Page, selector: string) =>
 test("hero: the real h1 is in the DOM at the bottom-left and the 3D canvas is decorative", async ({ page }) => {
   await open(page);
   await goTo(page, 0.05);
-  await expect(page.locator('[data-stage="hero-s2"] h1')).toContainText("SUA MARCA");
+  await expect(page.locator('[data-stage="hero-s2"] h1')).toContainText("MARKETING COM");
   await expect(page.locator('[data-stage="hero-s2"] canvas')).toHaveAttribute("aria-hidden", "true");
   const vp = page.viewportSize()!;
   const c = await center(page, '[data-stage="hero-s2"] [data-title="hero"]');
@@ -176,4 +176,89 @@ test("keeps white text readable: the area behind each title has contrast >= 4.5:
     console.log(`contrast @${p} ${selector}: ${ratio.toFixed(2)}:1`);
     expect(ratio, `contrast at progress ${p}`).toBeGreaterThanOrEqual(4.5);
   }
+});
+
+/** O menu de serviços é texto HTML sobre o vídeo: o véu preto da seção 2 precisa cobrir o título E o menu. Mede o pior caso
+ *  (média dos 10% mais claros do fundo no bloco inteiro), não a média, que o fundo escuro esconde. */
+test("keeps the services menu readable: even the brightest spots behind the right block keep contrast with white", async ({ page }) => {
+  await open(page);
+  for (const p of [0.7, 0.8, 0.95]) {
+    await goTo(page, p);
+    await page.evaluate(() => window.__dynamo!.debug!.hideText(true));
+    await page.addStyleTag({ content: '[data-stage="hero-s2"] nav { visibility: hidden !important; }' });
+    await page.waitForTimeout(100);
+    const navBox = (await page.locator('[data-stage="hero-s2"] nav').boundingBox())!;
+    const titleBox = (await page.locator('[data-stage="hero-s2"] [data-title="s2"]').boundingBox())!;
+    const x0 = Math.min(navBox.x, titleBox.x);
+    const y0 = Math.min(navBox.y, titleBox.y);
+    const box = { x: x0, y: y0, width: Math.max(navBox.x + navBox.width, titleBox.x + titleBox.width) - x0, height: Math.max(navBox.y + navBox.height, titleBox.y + titleBox.height) - y0 };
+    const shot = (await page.screenshot()).toString("base64");
+    await page.evaluate(() => window.__dynamo!.debug!.hideText(false));
+    const y = await page.evaluate(
+      async ({ b64, rect }) => {
+        const img = new Image();
+        img.src = `data:image/png;base64,${b64}`;
+        await img.decode();
+        const k = img.naturalWidth / window.innerWidth;
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(img, 0, 0);
+        const { data } = ctx.getImageData(Math.round(rect.x * k), Math.round(rect.y * k), Math.round(rect.width * k), Math.round(rect.height * k));
+        const lin = (v: number) => ((v /= 255) <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+        const lums: number[] = [];
+        for (let i = 0; i < data.length; i += 16) lums.push(0.2126 * lin(data[i]) + 0.7152 * lin(data[i + 1]) + 0.0722 * lin(data[i + 2]));
+        lums.sort((u, v) => v - u);
+        const top = lums.slice(0, Math.max(1, Math.floor(lums.length * 0.1)));
+        return top.reduce((u, v) => u + v, 0) / top.length;
+      },
+      { b64: shot, rect: box },
+    );
+    const ratio = 1.05 / (y + 0.05);
+    console.log(`contrast @${p} brightest 10% behind right block: ${ratio.toFixed(2)}:1`);
+    expect(ratio, `menu contrast at progress ${p}`).toBeGreaterThanOrEqual(7);
+  }
+});
+
+test("hero: the decorative thought line sits above the eyebrow, left aligned with it", async ({ page }) => {
+  await open(page);
+  await goTo(page, 0.05);
+  const thought = page.locator('[data-stage="hero-s2"] [data-copy="hero"] [aria-hidden="true"]:has([role="status"])');
+  await expect(thought).toBeVisible();
+  const t = (await thought.boundingBox())!;
+  const e = (await page.locator('[data-stage="hero-s2"] [data-copy="hero"] .eyebrow').boundingBox())!;
+  expect(t.y + t.height).toBeLessThanOrEqual(e.y + 1);
+  expect(Math.abs(t.x - e.x)).toBeLessThan(2);
+});
+
+test("section 2: choosing a service brings its glass card forward, fades the others and stays in the top half", async ({ page }) => {
+  await open(page);
+  await goTo(page, 0.8);
+  const vp = page.viewportSize()!;
+  const deck = page.locator("[data-service-deck]");
+  await expect(deck).toBeAttached();
+  const box = (await deck.boundingBox())!;
+  expect(box.y).toBeGreaterThanOrEqual(0.09 * vp.height);
+  expect(box.y).toBeLessThan(vp.height / 3);
+  expect(box.y + box.height).toBeLessThanOrEqual(vp.height / 2 + 1);
+  const states = () => page.locator("[data-service-card]").evaluateAll((els) => els.map((el) => (el as HTMLElement).dataset.state));
+  expect(await states()).toEqual(["rest", "rest", "rest", "rest", "rest"]);
+  await page.locator('[data-service-button="3"]').click(); // clique serve para mouse e toque
+  await page.waitForTimeout(700);
+  expect(await states()).toEqual(["dim", "dim", "dim", "active", "dim"]);
+  const opacities = () => page.locator("[data-service-card]").evaluateAll((els) => els.map((el) => Number(getComputedStyle(el).opacity)));
+  await expect.poll(async () => (await opacities())[3], { timeout: 5000 }).toBeGreaterThan(0.95); // a transição de 0,35 s demora mais sob WebGL por software
+  await expect.poll(async () => Math.max(...(await opacities()).filter((_, i) => i !== 3)), { timeout: 5000 }).toBeLessThan(0.3);
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(500);
+  expect(await states()).toEqual(["rest", "rest", "rest", "rest", "rest"]);
+});
+
+test("section 2: the services menu is inert while the hero is on screen and live in section 2", async ({ page }) => {
+  await open(page);
+  await goTo(page, 0.05);
+  await expect(page.locator("nav[aria-label='Serviços da Dynamo']")).toHaveAttribute("inert", "");
+  await goTo(page, 0.8);
+  await expect(page.locator("nav[aria-label='Serviços da Dynamo']")).not.toHaveAttribute("inert", "");
 });

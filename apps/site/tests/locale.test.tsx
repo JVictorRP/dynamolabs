@@ -24,7 +24,7 @@ describe("LocaleProvider", () => {
         <Probe />
       </LocaleProvider>,
     );
-    expect(screen.getByText("MARKETING WITH AI AND AUTOMATION|en|privacy|pt,en")).toBeTruthy();
+    expect(screen.getByText("DIGITAL MARKETING AGENCY|en|privacy|pt,en")).toBeTruthy();
   });
 
   it("fails loudly when a component is rendered without a provider", () => {

@@ -1,4 +1,5 @@
 import type { Copy } from "@/content/copy/index";
+import { ThoughtLineLazy } from "./ThoughtLineLazy";
 
 /**
  * Versão estática (sem scroll animado) das seções: usada com "reduzir movimento" e dentro de <noscript>.
@@ -32,6 +33,7 @@ function DarkSection({ id, n, children, label }: { id: "v1" | "v2"; n: number; c
 export function HeroStatic({ copy }: { copy: Copy }) {
   return (
     <DarkSection id="v1" n={1} label="hero">
+      <ThoughtLineLazy phrases={copy.hero.thoughts.slice(0, 1)} />
       <p className={eyebrow}>{copy.hero.eyebrow}</p>
       <p className="m-0 font-display text-[clamp(16px,2.4vw,36px)] font-light text-gray-300 italic">{copy.hero.support}</p>
       <h1 className={title}>{copy.hero.title}</h1>
@@ -44,7 +46,13 @@ export function Section2Static({ copy }: { copy: Copy }) {
     <DarkSection id="v1" n={60} label="section-2">
       <p className={eyebrow}>{copy.s2.eyebrow}</p>
       <h2 className={title}>{copy.s2.title}</h2>
-      <p className="m-0 max-w-xl font-display text-[clamp(16px,1.6vw,24px)] font-light text-mist">{copy.s2.body}</p>
+      <ul aria-label={copy.s2.servicesLabel} className="m-0 flex max-w-xl list-none flex-col gap-3 p-0">
+        {copy.s2.services.map((service) => (
+          <li key={service.name} className="font-display text-[clamp(16px,1.6vw,24px)] font-light text-mist">
+            <strong className="font-bold text-white">{service.name}.</strong> {service.text}
+          </li>
+        ))}
+      </ul>
     </DarkSection>
   );
 }

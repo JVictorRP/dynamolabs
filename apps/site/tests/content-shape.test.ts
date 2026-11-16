@@ -68,20 +68,21 @@ describe("copy has the same shape in every language", () => {
 
   it("pins the titles decided in the plan", () => {
     const pinned: Record<Exclude<Lang, "pt">, Record<string, string>> = {
-      en: { hero: "YOUR BRAND\nIN MOTION", s2: "AI DOES\nTHE HEAVY\nLIFTING", chat: "ANSWERS IN\nSECONDS, DAY\nAND NIGHT", video2: "YOUR NEXT\nCLIENT HAS\nARRIVED" },
-      es: { hero: "TU MARCA\nEN MOVIMIENTO", s2: "LA IA HACE\nEL TRABAJO\nPESADO", chat: "RESPUESTA EN\nSEGUNDOS, DÍA\nY NOCHE", video2: "TU PRÓXIMO\nCLIENTE YA\nLLEGÓ" },
+      en: { hero: "MARKETING WITH\nAI THAT SELLS", s2: "AI DOES\nTHE HEAVY\nLIFTING", chat: "ANSWERS IN\nSECONDS, DAY\nAND NIGHT", video2: "YOUR NEXT\nCLIENT HAS\nARRIVED" },
+      es: { hero: "MARKETING CON\nIA QUE VENDE", s2: "LA IA HACE\nEL TRABAJO\nPESADO", chat: "RESPUESTA EN\nSEGUNDOS, DÍA\nY NOCHE", video2: "TU PRÓXIMO\nCLIENTE YA\nLLEGÓ" },
     };
     for (const lang of others) {
       const c = getCopy(lang);
       expect([c.hero.title, c.s2.title, c.chat.title, c.video2.title]).toEqual([pinned[lang].hero, pinned[lang].s2, pinned[lang].chat, pinned[lang].video2]);
     }
-    expect([getCopy("en").hero.keyword, getCopy("en").s2.keyword, getCopy("en").video2.keyword]).toEqual(["MOTION", "HEAVY", "ARRIVED"]);
-    expect([getCopy("es").hero.keyword, getCopy("es").s2.keyword, getCopy("es").video2.keyword]).toEqual(["MOVIMIENTO", "PESADO", "LLEGÓ"]);
+    expect([getCopy("en").hero.keyword, getCopy("en").s2.keyword, getCopy("en").video2.keyword]).toEqual(["SELLS", "HEAVY", "ARRIVED"]);
+    expect([getCopy("es").hero.keyword, getCopy("es").s2.keyword, getCopy("es").video2.keyword]).toEqual(["VENDE", "PESADO", "LLEGÓ"]);
   });
 
-  it("keeps the approved Portuguese untouched", () => {
+  it("keeps the approved Portuguese (hero title changed on 2026-11-16, the rest untouched)", () => {
     const pt = getCopy("pt");
-    expect(pt.hero.title).toBe("SUA MARCA\nEM MOVIMENTO");
+    expect(pt.hero.title).toBe("MARKETING COM\nIA QUE VENDE");
+    expect(pt.hero.keyword).toBe("VENDE");
     expect(pt.s2.title).toBe("IA FAZ\nO TRABALHO\nPESADO");
     expect(pt.video2.title).toBe("SEU PRÓXIMO\nCLIENTE JÁ\nCHEGOU");
     expect(pt.status).toBe("final");
@@ -92,6 +93,25 @@ describe("copy has the same shape in every language", () => {
       expect(getCopy(lang).status).toBe("final");
       expect(getLegal(lang).status).toBe("final");
     }
+  });
+});
+
+describe("hero thought line and section 2 services", () => {
+  for (const lang of LANGS) {
+    it(`${lang}: 3 thought phrases and the 5 services, each with a name and a text`, () => {
+      const c = getCopy(lang);
+      expect(c.hero.thoughts).toHaveLength(3);
+      expect(c.s2.services).toHaveLength(5);
+      for (const s of c.s2.services) {
+        expect(s.name.trim()).not.toBe("");
+        expect(s.text.trim()).not.toBe("");
+      }
+      expect(c.s2.servicesLabel.trim()).not.toBe("");
+    });
+  }
+
+  it("pt lists the approved services in order", () => {
+    expect(getCopy("pt").s2.services.map((s) => s.name)).toEqual(["Tráfego pago", "Criativo e conteúdo", "Sites e landing pages", "Sistemas e CRM", "Chatbot e automação com IA"]);
   });
 });
 

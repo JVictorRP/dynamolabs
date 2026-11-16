@@ -23,7 +23,7 @@ test.describe("no JavaScript", () => {
   test("the page still has its title, the first frame and the call to action", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("h1:visible")).toHaveCount(1);
-    await expect(page.locator("h1:visible")).toContainText("SUA MARCA");
+    await expect(page.locator("h1:visible")).toContainText("MARKETING COM");
     await expect(page.locator('img[src$="/frames/v1/desktop/0001.webp"]')).toBeVisible();
     await expect(page.locator("[data-cta]")).toBeVisible();
   });

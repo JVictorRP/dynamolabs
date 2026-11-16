@@ -11,8 +11,8 @@ export type Copy = {
   langLabel: string;
   aria: { mainNav: string; footerNav: string; home: string };
   nav: { links: Link[]; cta: Link };
-  hero: { eyebrow: string; support: string; title: string; keyword: string; cue: string; deco: string[] };
-  s2: { eyebrow: string; title: string; keyword: string; body: string; deco: string[] };
+  hero: { eyebrow: string; support: string; title: string; keyword: string; cue: string; deco: string[]; /** Frases que o ThoughtLine decorativo alterna acima da sobrancelha. */ thoughts: string[] };
+  s2: { eyebrow: string; title: string; keyword: string; deco: string[]; /** Rótulo acessível do menu de serviços. */ servicesLabel: string; services: { name: string; text: string }[] };
   chat: {
     eyebrow: string;
     title: string;
