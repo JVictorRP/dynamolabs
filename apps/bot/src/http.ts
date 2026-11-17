@@ -35,6 +35,9 @@ function send(res: ServerResponse, status: number, body: string, type = "text/pl
 export function createHandler(deps: { db: Db; appSecret: string; verifyToken: string; log?: (msg: string, err?: unknown) => void }) {
   const log = deps.log ?? ((msg: string, err?: unknown) => console.error(msg, err ?? ""));
 
+  // Só o fim do id do número aparece no log: o suficiente para conferir com a Meta, sem expor dados pessoais.
+  const tail = (id: string) => id.slice(-4);
+
   async function handleMessages(raw: string) {
     let body: unknown;
     try {
@@ -44,13 +47,24 @@ export function createHandler(deps: { db: Db; appSecret: string; verifyToken: st
     }
     for (const msg of parseWebhook(body)) {
       const found = await findNumber(deps.db, msg.phoneNumberId);
-      if (!found || found.number.status === "desligado") continue;
+      if (!found) {
+        log(`Mensagem ignorada: número não cadastrado (phone_number_id terminando em ${tail(msg.phoneNumberId)}). Confira o ID em /admin → Ligar WhatsApp.`);
+        continue;
+      }
+      if (found.number.status === "desligado") {
+        log(`Mensagem ignorada: número desligado (phone_number_id terminando em ${tail(msg.phoneNumberId)}).`);
+        continue;
+      }
       const { organizationId } = found;
       const { conversationId, duplicate } = await recordIncoming(deps.db, organizationId, msg);
       if (duplicate) continue;
       const config = await getConfig(deps.db, organizationId);
-      if (!config.enabled) continue;
+      if (!config.enabled) {
+        log(`Mensagem gravada, sem resposta: bot desligado (phone_number_id terminando em ${tail(msg.phoneNumberId)}).`);
+        continue;
+      }
       await scheduleReply(deps.db, organizationId, conversationId, config.debounceSeconds);
+      log(`Mensagem recebida: resposta agendada (phone_number_id terminando em ${tail(msg.phoneNumberId)}).`);
     }
   }
 
@@ -76,6 +90,7 @@ export function createHandler(deps: { db: Db; appSecret: string; verifyToken: st
           throw e;
         }
         if (!verifySignature(raw, (req.headers["x-hub-signature-256"] as string | undefined) ?? null, deps.appSecret)) {
+          log("Webhook recusado: assinatura inválida. Confira se o META_APP_SECRET do bot é a chave secreta do app que envia o webhook.");
           return send(res, 401, "assinatura inválida");
         }
         await handleMessages(raw);

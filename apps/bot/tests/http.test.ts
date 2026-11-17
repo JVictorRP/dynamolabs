@@ -13,10 +13,11 @@ let db: Db;
 let close: () => Promise<void>;
 let server: Server;
 let base: string;
+const lines: string[] = [];
 
 beforeAll(async () => {
   ({ db, close } = await createTestDb());
-  server = createServer(createHandler({ db, appSecret: SECRET, verifyToken: "verifica" }));
+  server = createServer(createHandler({ db, appSecret: SECRET, verifyToken: "verifica", log: (m) => lines.push(m) }));
   await new Promise<void>((r) => server.listen(0, r));
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 });
@@ -41,6 +42,48 @@ function payload(phoneNumberId: string, wamid: string, extra: Record<string, unk
 }
 const messagesOf = async (org: string) => db.select().from(schema.message).where(eq(schema.message.organizationId, org));
 const jobsOf = async (org: string) => db.select().from(schema.botJob).where(eq(schema.botJob.organizationId, org));
+
+describe("webhook log (lets the operator see why the bot stayed silent)", () => {
+  it("says so when the signature is refused, pointing at META_APP_SECRET", async () => {
+    lines.length = 0;
+    await post(payload("PN-X", "wl1"), "sha256=00");
+    expect(lines.join("\n")).toMatch(/assinatura inválida.*META_APP_SECRET/);
+  });
+
+  it("says so when the number is not registered, showing only the end of the id and no personal data", async () => {
+    lines.length = 0;
+    await post(payload("PN-DESCONHECIDO-9876", "wl2"));
+    const out = lines.join("\n");
+    expect(out).toMatch(/número não cadastrado.*9876/);
+    expect(out).not.toContain("PN-DESCONHECIDO");
+    expect(out).not.toContain("5527900001111");
+    expect(out).not.toContain("oi");
+  });
+
+  it("says so when the number is switched off", async () => {
+    const off = await seedBot(db, "LogDesligado", { status: "desligado" });
+    lines.length = 0;
+    await post(payload(off.phoneNumberId, "wl3"));
+    expect(lines.join("\n")).toMatch(/número desligado/);
+  });
+
+  it("says so when the message is stored but the bot is off, and when a reply is scheduled", async () => {
+    const off = await seedBot(db, "LogBotOff", { enabled: false });
+    lines.length = 0;
+    await post(payload(off.phoneNumberId, "wl4"));
+    expect(lines.join("\n")).toMatch(/bot desligado/);
+    const on = await seedBot(db, "LogBotOn");
+    lines.length = 0;
+    await post(payload(on.phoneNumberId, "wl5"));
+    expect(lines.join("\n")).toMatch(/resposta agendada/);
+  });
+
+  it("stays quiet for status-only notifications", async () => {
+    lines.length = 0;
+    await post(JSON.stringify({ entry: [{ changes: [{ value: { metadata: { phone_number_id: "PN-Y" }, statuses: [{ id: "x" }] } }] }] }));
+    expect(lines).toEqual([]);
+  });
+});
 
 describe("webhook verification", () => {
   it("echoes the challenge with the right token", async () => {
