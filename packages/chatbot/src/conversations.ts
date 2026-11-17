@@ -32,6 +32,12 @@ export async function ensureConversation(
   return conv;
 }
 
+/** Maior entre o último contato gravado e este. */
+export function lastCustomerAtExpr(ts: Date) {
+  const iso = ts.toISOString();
+  return sql`greatest(coalesce(${schema.conversation.lastCustomerAt}, ${iso}::timestamptz), ${iso}::timestamptz)`;
+}
+
 export async function recordIncoming(
   db: Db,
   organizationId: string,
@@ -56,7 +62,7 @@ export async function recordIncoming(
   if (inserted.length === 0) return { conversationId: conv.id, duplicate: true };
   await db
     .update(schema.conversation)
-    .set({ lastCustomerAt: sql`greatest(coalesce(${schema.conversation.lastCustomerAt}, ${msg.timestamp}), ${msg.timestamp})` })
+    .set({ lastCustomerAt: lastCustomerAtExpr(msg.timestamp) })
     .where(eq(schema.conversation.id, conv.id));
   return { conversationId: conv.id, duplicate: false };
 }
