@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PERIODS, type Period } from "@/lib/data/period";
+import { statFontSize } from "@/lib/stat-size";
 
 /**
  * Cabeçalho de página na hierarquia da marca:
@@ -53,10 +54,13 @@ export function CardTitle({ children }: { children: React.ReactNode }) {
 /** Número em destaque. `accent` = o número-herói da tela, em âmbar (use em um só por tela). */
 export function Stat({ label, value, hint, accent }: { label: string; value: string; hint?: string; accent?: boolean }) {
   return (
-    <Card>
+    // O cartão é um container: o tamanho da fonte acompanha a largura dele, então "Com problema" nunca vaza da caixa.
+    <Card className="min-w-0 [container-type:inline-size]">
       <CardTitle>{label}</CardTitle>
-      <p className={`display mt-5 text-4xl tabular-nums ${accent ? "text-amber" : ""}`}>{value}</p>
-      {hint && <p className="mt-3 text-xs text-gray-300">{hint}</p>}
+      <p className={`display mt-5 break-words tabular-nums ${accent ? "text-amber" : ""}`} style={{ fontSize: statFontSize(value), lineHeight: 1.15 }}>
+        {value}
+      </p>
+      {hint && <p className="mt-3 break-words text-xs text-gray-300">{hint}</p>}
     </Card>
   );
 }

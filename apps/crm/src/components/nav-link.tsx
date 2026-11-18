@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-export function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
+export function NavLink({ href, children, badge }: { href: string; children: React.ReactNode; badge?: React.ReactNode }) {
   const pathname = usePathname();
   const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
   return (
@@ -14,6 +14,7 @@ export function NavLink({ href, children }: { href: string; children: React.Reac
     >
       <i className={`size-[7px] rounded-full ${active ? "bg-teal" : "bg-transparent"}`} aria-hidden="true" />
       {children}
+      {badge && <span className="ml-auto pl-1">{badge}</span>}
     </Link>
   );
 }

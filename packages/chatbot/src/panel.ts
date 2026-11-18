@@ -17,6 +17,22 @@ export class ManualReplyWindowError extends Error {
   }
 }
 
+export type BotIndicator = "on" | "off" | "erro";
+
+/** Resumo para o menu: ligado só com o bot ativo e o número conectado; "erro" quando ligado mas o número não consegue enviar. */
+export function indicatorOf(enabled: boolean, numberStatus: string | null): BotIndicator {
+  if (!enabled) return "off";
+  if (numberStatus === "ativo") return "on";
+  if (numberStatus === "com_problema") return "erro";
+  return "off";
+}
+
+export async function botIndicator(db: Db, organizationId: string): Promise<BotIndicator> {
+  const [config] = await db.select({ enabled: schema.botConfig.enabled }).from(schema.botConfig).where(eq(schema.botConfig.organizationId, organizationId));
+  const [number] = await db.select({ status: schema.whatsappNumber.status }).from(schema.whatsappNumber).where(eq(schema.whatsappNumber.organizationId, organizationId));
+  return indicatorOf(config?.enabled ?? false, number?.status ?? null);
+}
+
 export async function overview(db: Db, organizationId: string, now: Date, usdBrl: number) {
   const config = await getConfig(db, organizationId);
   const [number] = await db.select({ status: schema.whatsappNumber.status }).from(schema.whatsappNumber).where(eq(schema.whatsappNumber.organizationId, organizationId));

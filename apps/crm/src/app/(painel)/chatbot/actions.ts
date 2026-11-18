@@ -30,6 +30,7 @@ export async function toggleBotAction(formData: FormData) {
   const { organization } = await requireManager();
   await updateConfig(db, organization.id, { enabled: formData.get("enabled") === "on" });
   revalidatePath("/chatbot");
+  revalidatePath("/", "layout"); // o selo ON/OFF do menu fica no layout
 }
 
 /* Conversas */

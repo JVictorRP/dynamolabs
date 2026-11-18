@@ -2,7 +2,10 @@ import { getOrgContext } from "@/lib/context";
 import { NavLink } from "@/components/nav-link";
 import { SignOutButton } from "@/components/sign-out";
 import { FooterLine, Wordmark } from "@/components/brand";
+import { botIndicator } from "@dynamo/chatbot";
+import { BotBadge } from "@/components/bot-badge";
 import { canManageBot } from "@/lib/chatbot";
+import { db } from "@/lib/db";
 import { isStaff } from "@/lib/staff";
 
 const NAV = [
@@ -14,9 +17,10 @@ const NAV = [
 
 export default async function PainelLayout({ children }: { children: React.ReactNode }) {
   const { organization, user, role } = await getOrgContext();
-  const nav = [
+  const botState = canManageBot(role) ? await botIndicator(db, organization.id) : null;
+  const nav: { href: string; label: string; badge?: React.ReactNode }[] = [
     ...NAV,
-    ...(canManageBot(role) ? [{ href: "/chatbot", label: "Chatbot" }] : []),
+    ...(botState ? [{ href: "/chatbot", label: "Chatbot", badge: <BotBadge state={botState} /> }] : []),
     ...(isStaff(user.email) ? [{ href: "/clientes", label: "Clientes" }] : []),
   ];
 
@@ -29,7 +33,7 @@ export default async function PainelLayout({ children }: { children: React.React
         </div>
         <nav className="flex gap-1 overflow-x-auto px-3 pb-3 md:flex-col md:pb-0">
           {nav.map((item) => (
-            <NavLink key={item.href} href={item.href}>
+            <NavLink key={item.href} href={item.href} badge={item.badge}>
               {item.label}
             </NavLink>
           ))}
