@@ -7,7 +7,6 @@ const TABS = [
   { href: "/chatbot/conversas", label: "Conversas" },
   { href: "/chatbot/estilo", label: "Estilo" },
   { href: "/chatbot/planilhas", label: "Planilhas" },
-  { href: "/chatbot/automacoes", label: "Automações" },
   { href: "/chatbot/simulador", label: "Simulador" },
 ];
 

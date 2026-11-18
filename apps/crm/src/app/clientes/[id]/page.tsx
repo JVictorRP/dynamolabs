@@ -24,6 +24,11 @@ export default async function ClientePage({ params }: { params: Promise<{ id: st
         <p className="text-sm text-gray-300">Monte os posts, veja a prévia no celular e mande o link para o cliente aprovar.</p>
         <Link href={`/clientes/${client.id}/conteudo`} className="label inline-block rounded-[12px] bg-teal px-6 py-3.5 text-[0.7rem] text-graphite">Abrir conteúdo</Link>
       </Card>
+      <Card className="space-y-3">
+        <CardTitle>Automações do chatbot</CardTitle>
+        <p className="text-sm text-gray-300">Ações do bot, n8n, telefone do responsável, teto de gasto e regras extras. Só a equipe da Dynamo altera.</p>
+        <Link href={`/clientes/${client.id}/automacoes`} className="label inline-block rounded-[12px] bg-teal px-6 py-3.5 text-[0.7rem] text-graphite">Abrir automações</Link>
+      </Card>
       <Card className="space-y-5">
         <CardTitle>Pessoas com acesso</CardTitle>
         <ul className="divide-y divide-graphite">

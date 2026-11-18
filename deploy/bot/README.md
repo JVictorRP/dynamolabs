@@ -84,7 +84,7 @@ Clique em **Verificar e salvar**. Depois, em **Campos do webhook**, assine **mes
 No CRM, entre como dono ou admin da empresa e abra **Chatbot**:
 1. **Estilo:** suba conversas exportadas do atendente e gere o guia.
 2. **Planilhas:** cole o link e escolha a aba.
-3. **Automações:** ajuste as ações, o telefone do responsável e o teto mensal.
+3. **Automações:** só a equipe da Dynamo configura (ações, n8n, telefone do responsável, teto mensal e regras extras), em **Clientes → cliente → Automações**. O cliente não vê essa aba.
 4. **Simulador:** teste as perguntas típicas.
 5. **Visão geral:** só então ligue o bot.
 

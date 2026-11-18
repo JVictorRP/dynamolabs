@@ -151,31 +151,6 @@ export async function removeSheetAction(formData: FormData) {
   revalidatePath("/chatbot/planilhas");
 }
 
-/* Automações */
-export async function saveAutomationsAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { organization } = await requireManager();
-  try {
-    await updateConfig(db, organization.id, {
-      actions: {
-        registrar_lead: formData.get("registrar_lead") === "on",
-        passar_humano: formData.get("passar_humano") === "on",
-        avisar_responsavel: formData.get("avisar_responsavel") === "on",
-        enviar_n8n: formData.get("enviar_n8n") === "on",
-      },
-      n8nWebhookUrl: str(formData, "n8nWebhookUrl"),
-      ownerPhone: str(formData, "ownerPhone"),
-      nonTextPolicy: str(formData, "nonTextPolicy") === "humano" ? "humano" : "pedir_texto",
-      handoffHours: Number(str(formData, "handoffHours")),
-      monthlyCapBrl: Number(str(formData, "monthlyCapBrl").replace(",", ".")),
-      extraRules: str(formData, "extraRules"),
-    });
-    revalidatePath("/chatbot/automacoes");
-    return { ok: true, message: "Configurações salvas." };
-  } catch (e) {
-    return fail(e);
-  }
-}
-
 /* Simulador */
 export async function simulateAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const { organization, user } = await requireManager();
