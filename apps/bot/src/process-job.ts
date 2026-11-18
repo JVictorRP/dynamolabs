@@ -84,7 +84,7 @@ async function reply(deps: JobDeps, job: BotJob) {
   if (!config.enabled) return;
   if (conv.mode === "humano") {
     if (isHumanMode(conv, now)) return;
-    await releaseToBot(db, organizationId, conversationId);
+    await releaseToBot(db, organizationId, conversationId, conv.handoffUntil ?? undefined);
   }
 
   const pending = await unanswered(db, organizationId, conversationId);

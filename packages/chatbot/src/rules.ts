@@ -54,9 +54,10 @@ export async function setHumanMode(db: Db, organizationId: string, conversationI
     .where(and(eq(schema.conversation.id, conversationId), eq(schema.conversation.organizationId, organizationId)));
 }
 
-export async function releaseToBot(db: Db, organizationId: string, conversationId: string): Promise<void> {
+/** `humanUntil`: fim do prazo de atendimento humano. O que chegou depois dele é mensagem nova e o bot responde. */
+export async function releaseToBot(db: Db, organizationId: string, conversationId: string, humanUntil?: Date): Promise<void> {
   // O que chegou durante o atendimento humano fica com a equipe: o bot volta só para mensagens novas.
-  await markAllAnswered(db, organizationId, conversationId);
+  await markAllAnswered(db, organizationId, conversationId, humanUntil);
   await db
     .update(schema.conversation)
     .set({ mode: "bot", handoffUntil: null, updatedAt: new Date() })

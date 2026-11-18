@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, lte, sql } from "drizzle-orm";
 import { schema, type Db } from "@dynamo/db";
 import type { IncomingMessage } from "./whatsapp/webhook-payload";
 
@@ -102,7 +102,8 @@ export async function markAnswered(db: Db, organizationId: string, conversationI
     .where(and(eq(schema.message.organizationId, organizationId), eq(schema.message.conversationId, conversationId), inArray(schema.message.id, ids)));
 }
 
-export async function markAllAnswered(db: Db, organizationId: string, conversationId: string): Promise<void> {
+/** `upTo`: só o que chegou até esse instante (o que veio depois ainda espera resposta). */
+export async function markAllAnswered(db: Db, organizationId: string, conversationId: string, upTo?: Date): Promise<void> {
   await db
     .update(schema.message)
     .set({ answeredAt: new Date() })
@@ -112,6 +113,7 @@ export async function markAllAnswered(db: Db, organizationId: string, conversati
         eq(schema.message.conversationId, conversationId),
         eq(schema.message.direction, "in"),
         isNull(schema.message.answeredAt),
+        upTo ? lte(schema.message.createdAt, upTo) : undefined,
       ),
     );
 }

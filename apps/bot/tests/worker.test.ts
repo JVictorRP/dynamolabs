@@ -72,6 +72,21 @@ describe("runJob responder", () => {
     expect(d.wa.sent).toEqual([]);
   });
 
+  it("answers the message that arrives after the human handoff expired, leaving only what came during the human period to the team", async () => {
+    const { org, conversationId, job, phoneNumberId } = await incomingJob("Vencido");
+    // Chegou durante o atendimento humano (3 h atrás), antes do prazo vencer (há 1 h).
+    await recordIncoming(db, org, { phoneNumberId, waId: "5527900002222", contactName: "Bia", wamid: "wamid.in.durante", type: "text", text: "alguém aí?", timestamp: new Date(Date.now() - 3 * 3600_000) });
+    await setHumanMode(db, org, conversationId, 12);
+    await db.update(schema.conversation).set({ handoffUntil: new Date(Date.now() - 3600_000) }).where(eq(schema.conversation.id, conversationId));
+    const d = deps();
+    await runJob(job, d);
+    expect(d.wa.sent).toHaveLength(1);
+    const msgs = await db.select().from(schema.message).where(eq(schema.message.conversationId, conversationId));
+    expect(msgs.filter((m) => m.direction === "in").every((m) => m.answeredAt !== null)).toBe(true);
+    const [conv] = await db.select().from(schema.conversation).where(eq(schema.conversation.id, conversationId));
+    expect(conv.mode).toBe("bot");
+  });
+
   it("asks for text when the customer sends an image", async () => {
     const { job } = await incomingJob("Imagem", { type: "image", text: null });
     const d = deps();
